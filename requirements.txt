@@ -4,7 +4,7 @@ pydantic-settings==2.5.2
 python-dotenv==1.0.1
 
 # API Clients
-apify-client==2.2.2
+apify-client==2.2.1
 notion-client==2.2.1
 openai==1.54.3
 
@@ -15,6 +15,9 @@ lxml==5.3.0
 
 # Retry Logic
 tenacity==9.0.0
+
+# Phone Number Normalization
+phonenumbers==8.13.47
 
 # Token Counting (OpenAI cost estimation)
 tiktoken==0.8.0

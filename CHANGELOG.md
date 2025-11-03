@@ -26,6 +26,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - 8 test stub files generated (5 unit, 2 integration, 1 e2e)
   - Architecture decision: Modular Pipeline with Apify compass/crawler-google-places actor
   - Components: ApifyClient, DataFilter, InitialScorer, NotionBatchUpserter
+- FEAT-002: Website Enrichment & LLM Extraction planning complete - Ready for implementation (2025-11-03)
+  - 6 planning documents created (prd, research, architecture, acceptance, testing, manual-test)
+  - 43 acceptance criteria defined across functional, performance, quality, and operational requirements
+  - 51 test stubs created covering unit, integration, and e2e scenarios
+  - Architecture decision: Option 2 - Crawl4AI (Async) + OpenAI GPT-4o-mini + Structured Outputs
+  - Components: WebsiteCrawler, LLMExtractor, EnrichmentUpdater, RateLimiter
+  - 30-minute spike required to validate Crawl4AI extraction quality before full implementation
+  - 3 architectural options evaluated: Firecrawl (rejected - cost), Crawl4AI (recommended), Scrapy (rejected - complexity)
 
 ### Phase Roadmap
 - Phase 1 (Current): Planning & Documentation - Complete ✅

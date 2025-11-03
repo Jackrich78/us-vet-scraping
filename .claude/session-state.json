@@ -1,27 +1,27 @@
 {
-  "timestamp": "2025-11-03T14:32:47.574435",
+  "timestamp": "2025-11-03T19:44:22.516241",
   "compaction_trigger": "auto",
   "user_instructions": "",
   "active_features": [
     {
       "id": "FEAT-002_website-enrichment",
       "path": "docs/features/FEAT-002_website-enrichment",
-      "status": "unknown",
-      "has_prd": false,
-      "has_research": false,
+      "status": "planning",
+      "has_prd": true,
+      "has_research": true,
       "has_architecture": false
     },
     {
       "id": "FEAT-000_shared-infrastructure",
       "path": "docs/features/FEAT-000_shared-infrastructure",
-      "status": "exploring",
+      "status": "ready_for_implementation",
       "has_prd": true,
-      "has_research": false,
-      "has_architecture": false
+      "has_research": true,
+      "has_architecture": true
     },
     {
-      "id": "FEAT-001_example",
-      "path": "docs/features/FEAT-001_example",
+      "id": "FEAT-000_example",
+      "path": "docs/features/FEAT-000_example",
       "status": "ready_for_implementation",
       "has_prd": true,
       "has_research": true,
@@ -30,60 +30,60 @@
     {
       "id": "FEAT-003_lead-scoring",
       "path": "docs/features/FEAT-003_lead-scoring",
-      "status": "unknown",
-      "has_prd": false,
+      "status": "exploring",
+      "has_prd": true,
       "has_research": false,
       "has_architecture": false
     },
     {
       "id": "FEAT-001_google-maps-notion",
       "path": "docs/features/FEAT-001_google-maps-notion",
-      "status": "unknown",
-      "has_prd": false,
-      "has_research": false,
-      "has_architecture": false
+      "status": "ready_for_implementation",
+      "has_prd": true,
+      "has_research": true,
+      "has_architecture": true
     }
   ],
   "recent_changes": [
     {
-      "path": "docs/features/FEAT-000_shared-infrastructure/prd.md",
-      "modified": "2025-11-03T14:32:47.061666"
+      "path": "docs/features/FEAT-002_website-enrichment/prd.md",
+      "modified": "2025-11-03T19:44:13.822321"
     },
     {
-      "path": "docs/system/configuration.md",
-      "modified": "2025-11-03T14:12:32.293358"
+      "path": "docs/features/FEAT-002_website-enrichment/user-decisions.md",
+      "modified": "2025-11-03T19:31:29.789555"
     },
     {
-      "path": "docs/system/integrations.md",
-      "modified": "2025-11-03T14:10:44.647585"
+      "path": "docs/features/FEAT-002_website-enrichment/research.md",
+      "modified": "2025-11-03T19:29:48.894592"
     },
     {
-      "path": "docs/system/database.md",
-      "modified": "2025-11-03T14:08:25.118006"
+      "path": "docs/features/FEAT-001_google-maps-notion/User-tests-explained.md",
+      "modified": "2025-11-03T19:26:09.446857"
     },
     {
-      "path": "docs/system/architecture.md",
-      "modified": "2025-11-03T12:59:38.615109"
+      "path": "docs/README.md",
+      "modified": "2025-11-03T19:12:37.788678"
     },
     {
-      "path": "docs/system/stack.md",
-      "modified": "2025-11-03T12:57:32.655607"
+      "path": "docs/features/FEAT-001_google-maps-notion/manual-test.md",
+      "modified": "2025-11-03T18:37:22.255201"
     },
     {
-      "path": "docs/templates/acceptance-template.md",
-      "modified": "2025-11-03T12:20:09.164954"
+      "path": "docs/features/FEAT-001_google-maps-notion/testing.md",
+      "modified": "2025-11-03T18:35:41.023083"
     },
     {
-      "path": "docs/templates/research-template.md",
-      "modified": "2025-11-03T12:20:09.164774"
+      "path": "docs/features/FEAT-001_google-maps-notion/acceptance.md",
+      "modified": "2025-11-03T18:33:11.099993"
     },
     {
-      "path": "docs/templates/manual-test-template.md",
-      "modified": "2025-11-03T12:20:09.164604"
+      "path": "docs/features/FEAT-001_google-maps-notion/architecture.md",
+      "modified": "2025-11-03T18:32:10.161967"
     },
     {
-      "path": "docs/templates/architecture-template.md",
-      "modified": "2025-11-03T12:20:09.164431"
+      "path": "docs/features/FEAT-001_google-maps-notion/user-decisions.md",
+      "modified": "2025-11-03T18:25:47.604446"
     }
   ],
   "phase": "Phase 1 - Planning & Documentation",
@@ -92,7 +92,7 @@
     "files_to_read": [
       "docs/features/FEAT-002_website-enrichment",
       "docs/features/FEAT-000_shared-infrastructure",
-      "docs/features/FEAT-001_example",
+      "docs/features/FEAT-000_example",
       "docs/features/FEAT-003_lead-scoring",
       "docs/features/FEAT-001_google-maps-notion"
     ],

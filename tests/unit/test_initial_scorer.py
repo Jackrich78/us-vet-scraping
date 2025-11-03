@@ -1,142 +1,177 @@
-# tests/unit/test_initial_scorer.py
 """
-Unit tests for InitialScorer
-Tests baseline lead scoring algorithm (0-25 points)
+Unit tests for InitialScorer (FEAT-001).
+
+Tests baseline lead scoring algorithm (0-25 points):
+- Review count score: 0-15 points (tiered)
+- Star rating score: 0-10 points (tiered)
+Total: 0-25 points initial ICP fit score
 """
 
 import pytest
-from unittest.mock import Mock
+from src.processing.initial_scorer import InitialScorer
+from src.models.apify_models import ApifyGoogleMapsResult
 
 
-# TODO: Import actual InitialScorer once implemented
-# from src.processing.initial_scorer import InitialScorer
+class TestInitialScorer:
+    """Test InitialScorer class functionality."""
 
+    def test_calculate_score_max_score(self):
+        """AC-FEAT-001-005: Maximum score is 25 points (150+ reviews, 4.5+ rating)."""
+        # Given: Practice with optimal attributes
+        practice = ApifyGoogleMapsResult(
+            place_id="ChIJmax",
+            practice_name="Top Rated Vet",
+            address="123 St",
+            website="https://topvet.com",
+            google_review_count=150,  # 15 pts
+            google_rating=5.0,  # 10 pts
+            permanently_closed=False,
+        )
 
-# TODO: AC-FEAT-001-005 - Test maximum possible score
-def test_calculate_score_max_score():
-    """
-    Given a practice with 100+ reviews, 5.0 rating, and website
-    When calculate_score is called
-    Then it should return 25 points (maximum score)
-    """
-    # TODO: Create practice with optimal attributes (100+ reviews, 5.0 rating, website)
-    # TODO: Call calculate_score(practice)
-    # TODO: Assert returns 25 (max score)
-    # TODO: Verify score breakdown: review points + rating points + website points = 25
-    pass
+        scorer = InitialScorer()
 
+        # When: Calculating score
+        score = scorer.calculate_baseline_score(practice)
 
-# TODO: AC-FEAT-001-005 - Test minimum possible score
-def test_calculate_score_min_score():
-    """
-    Given a practice with 10 reviews (minimum), 3.0 rating (minimum), and website
-    When calculate_score is called
-    Then it should return a score in 0-25 range (low end)
-    """
-    # TODO: Create practice with minimum passing attributes (10 reviews, 3.0 rating)
-    # TODO: Call calculate_score(practice)
-    # TODO: Assert score > 0 and < 10 (low score)
-    # TODO: Verify score is positive (website gives +5 points minimum)
-    pass
+        # Then: Returns maximum score of 25
+        assert score == 25
 
+    def test_calculate_score_min_score(self):
+        """AC-FEAT-001-005: Minimum passing score (10 reviews, 3.5 rating) = 8 points."""
+        # Given: Practice with minimum passing attributes
+        practice = ApifyGoogleMapsResult(
+            place_id="ChIJmin",
+            practice_name="Basic Vet",
+            address="123 St",
+            website="https://basicvet.com",
+            google_review_count=10,  # 5 pts (0-49 tier)
+            google_rating=3.5,  # 3 pts (3.5-3.9 tier)
+            permanently_closed=False,
+        )
 
-# TODO: AC-FEAT-001-005 - Test review count weight (logarithmic scale)
-def test_calculate_score_review_weight():
-    """
-    Given practices with 10, 50, 100 reviews (same rating and website)
-    When calculate_score is called for each
-    Then higher review counts should yield higher scores (logarithmic progression)
-    """
-    # TODO: Create 3 practices with same rating (4.0), different review counts (10, 50, 100)
-    # TODO: Calculate score for each
-    # TODO: Assert score_10 < score_50 < score_100
-    # TODO: Verify logarithmic scaling (difference 50-10 > difference 100-50)
-    pass
+        scorer = InitialScorer()
 
+        # When: Calculating score
+        score = scorer.calculate_baseline_score(practice)
 
-# TODO: AC-FEAT-001-005 - Test star rating weight (linear scale)
-def test_calculate_score_rating_weight():
-    """
-    Given practices with same reviews but different ratings (3.0, 4.0, 5.0)
-    When calculate_score is called for each
-    Then higher ratings should yield higher scores (linear progression)
-    """
-    # TODO: Create 3 practices with same review count (50), different ratings (3.0, 4.0, 5.0)
-    # TODO: Calculate score for each
-    # TODO: Assert score_3 < score_4 < score_5
-    # TODO: Verify linear scaling (difference 4.0-3.0 ≈ difference 5.0-4.0)
-    pass
+        # Then: Returns low score
+        assert score == 8  # 5 + 3 = 8
 
+    def test_calculate_score_review_weight(self):
+        """AC-FEAT-001-005: Review count contributes 0-15 points in tiers."""
+        # Given: Practices with different review counts (same rating)
+        practices = [
+            ApifyGoogleMapsResult(
+                place_id="1",
+                practice_name="10 Reviews",
+                address="1 St",
+                website="https://test.com",
+                google_review_count=10,  # 5 pts (0-49 tier)
+                google_rating=4.0,
+                permanently_closed=False,
+            ),
+            ApifyGoogleMapsResult(
+                place_id="2",
+                practice_name="50 Reviews",
+                address="2 St",
+                website="https://test.com",
+                google_review_count=50,  # 10 pts (50-149 tier)
+                google_rating=4.0,
+                permanently_closed=False,
+            ),
+            ApifyGoogleMapsResult(
+                place_id="3",
+                practice_name="150 Reviews",
+                address="3 St",
+                website="https://test.com",
+                google_review_count=150,  # 15 pts (150+ tier)
+                google_rating=4.0,
+                permanently_closed=False,
+            ),
+        ]
 
-# TODO: AC-FEAT-001-005 - Test batch scoring
-def test_score_batch():
-    """
-    Given a list of 10 practices
-    When score_batch is called
-    Then all practices should have initial_score field added
-    """
-    # TODO: Create list of 10 practices without initial_score field
-    # TODO: Call score_batch(practices)
-    # TODO: Assert all 10 practices now have initial_score field
-    # TODO: Verify all scores are in 0-25 range
-    # TODO: Assert original practice data not modified (only score added)
-    pass
+        scorer = InitialScorer()
 
+        # When: Calculating scores
+        scores = [scorer.calculate_baseline_score(p) for p in practices]
 
-# Fixtures for test data
-@pytest.fixture
-def practice_max_score():
-    """Fixture providing practice with maximum score attributes"""
-    # TODO: Return practice with 150 reviews, 5.0 rating, website
-    return {
-        "placeId": "ChIJmax",
-        "title": "Top Rated Vet",
-        "reviewsCount": 150,
-        "totalScore": 5.0,
-        "website": "https://topvet.com"
-    }
+        # Then: Scores increase with review count in tiers
+        assert scores[0] == 11  # 5 (reviews) + 6 (rating) = 11
+        assert scores[1] == 16  # 10 (reviews) + 6 (rating) = 16
+        assert scores[2] == 21  # 15 (reviews) + 6 (rating) = 21
+        assert scores[0] < scores[1] < scores[2]
 
+    def test_calculate_score_rating_weight(self):
+        """AC-FEAT-001-005: Star rating contributes 0-10 points in tiers."""
+        # Given: Practices with different ratings (same review count)
+        practices = [
+            ApifyGoogleMapsResult(
+                place_id="1",
+                practice_name="3.5 Rating",
+                address="1 St",
+                website="https://test.com",
+                google_review_count=50,
+                google_rating=3.5,  # 3 pts (3.5-3.9 tier)
+                permanently_closed=False,
+            ),
+            ApifyGoogleMapsResult(
+                place_id="2",
+                practice_name="4.0 Rating",
+                address="2 St",
+                website="https://test.com",
+                google_review_count=50,
+                google_rating=4.0,  # 6 pts (4.0-4.4 tier)
+                permanently_closed=False,
+            ),
+            ApifyGoogleMapsResult(
+                place_id="3",
+                practice_name="4.5 Rating",
+                address="3 St",
+                website="https://test.com",
+                google_review_count=50,
+                google_rating=4.5,  # 10 pts (4.5+ tier)
+                permanently_closed=False,
+            ),
+        ]
 
-@pytest.fixture
-def practice_min_score():
-    """Fixture providing practice with minimum passing score attributes"""
-    # TODO: Return practice with 10 reviews, 3.0 rating, website
-    return {
-        "placeId": "ChIJmin",
-        "title": "Basic Vet",
-        "reviewsCount": 10,
-        "totalScore": 3.0,
-        "website": "https://basicvet.com"
-    }
+        scorer = InitialScorer()
 
+        # When: Calculating scores
+        scores = [scorer.calculate_baseline_score(p) for p in practices]
 
-@pytest.fixture
-def practices_varied_reviews():
-    """Fixture providing practices with different review counts"""
-    # TODO: Return 3 practices with 10, 50, 100 reviews (same rating)
-    return [
-        {"placeId": "1", "reviewsCount": 10, "totalScore": 4.0, "website": "https://test.com"},
-        {"placeId": "2", "reviewsCount": 50, "totalScore": 4.0, "website": "https://test.com"},
-        {"placeId": "3", "reviewsCount": 100, "totalScore": 4.0, "website": "https://test.com"},
-    ]
+        # Then: Scores increase with rating in tiers
+        assert scores[0] == 13  # 10 (reviews) + 3 (rating) = 13
+        assert scores[1] == 16  # 10 (reviews) + 6 (rating) = 16
+        assert scores[2] == 20  # 10 (reviews) + 10 (rating) = 20
+        assert scores[0] < scores[1] < scores[2]
 
+    def test_score_batch(self):
+        """AC-FEAT-001-005: Batch scoring adds initial_score to all practices."""
+        # Given: List of 10 practices without scores
+        practices = [
+            ApifyGoogleMapsResult(
+                place_id=f"ChIJ{i}",
+                practice_name=f"Vet {i}",
+                address=f"{i} St",
+                website=f"https://vet{i}.com",
+                google_review_count=10 + i * 10,
+                google_rating=min(3.5 + i * 0.2, 5.0),
+                permanently_closed=False,
+            )
+            for i in range(10)
+        ]
 
-@pytest.fixture
-def practices_varied_ratings():
-    """Fixture providing practices with different star ratings"""
-    # TODO: Return 3 practices with 3.0, 4.0, 5.0 ratings (same review count)
-    return [
-        {"placeId": "1", "reviewsCount": 50, "totalScore": 3.0, "website": "https://test.com"},
-        {"placeId": "2", "reviewsCount": 50, "totalScore": 4.0, "website": "https://test.com"},
-        {"placeId": "3", "reviewsCount": 50, "totalScore": 5.0, "website": "https://test.com"},
-    ]
+        scorer = InitialScorer()
 
+        # When: Batch scoring
+        scored_practices = scorer.score_batch(practices)
 
-@pytest.fixture
-def practices_batch():
-    """Fixture providing 10 practices for batch scoring"""
-    # TODO: Return list of 10 practices with varied attributes
-    return [
-        {"placeId": f"ChIJ{i}", "reviewsCount": 10 + i * 10, "totalScore": 3.0 + i * 0.2, "website": f"https://vet{i}.com"}
-        for i in range(10)
-    ]
+        # Then: All practices have scores in 0-25 range
+        assert len(scored_practices) == 10
+        assert all(hasattr(p, "initial_score") for p in scored_practices)
+        assert all(0 <= p.initial_score <= 25 for p in scored_practices)
+
+        # Original data not modified (except score added)
+        for i, practice in enumerate(scored_practices):
+            assert practice.place_id == f"ChIJ{i}"
+            assert practice.google_review_count == 10 + i * 10

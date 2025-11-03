@@ -349,6 +349,211 @@ Given an AI agent is generating feature documentation, when the agent references
 
 ---
 
+## FEAT-002: Website Enrichment & LLM Extraction
+
+### Functional Acceptance Criteria
+
+**AC-FEAT-002-001: Multi-Page Website Scraping**
+**Given** a veterinary practice with website URL "https://example-vet.com"
+**When** WebsiteScraper scrapes with BFSDeepCrawlStrategy (max_depth=1, max_pages=5)
+**Then** it should return 2-4 pages successfully scraped (homepage + /about + /team pages)
+
+**AC-FEAT-002-002: Concurrent Practice Scraping**
+**Given** 150 practices needing enrichment
+**When** EnrichmentOrchestrator processes them with max_concurrent=5
+**Then** it should scrape 5 practices concurrently, completing all 150 within 10-12 minutes
+
+**AC-FEAT-002-003: OpenAI Structured Output Extraction**
+**Given** scraped website pages with cleaned text (homepage + /about + /team)
+**When** LLMExtractor extracts data using beta.chat.completions.parse with VetPracticeExtraction model
+**Then** it should return 100% valid Pydantic object with all fields populated or null
+
+**AC-FEAT-002-004: Vet Count Extraction with Confidence**
+**Given** website text mentions "Dr. Jane Smith, Dr. John Doe, Dr. Mary Johnson"
+**When** LLMExtractor analyzes the text
+**Then** it should extract vet_count_total=3 with vet_count_confidence="high"
+
+**AC-FEAT-002-005: Decision Maker Extraction (Explicit Email Only)**
+**Given** website shows "Contact Dr. Smith (Owner) at drsmith@example.com"
+**When** LLMExtractor analyzes the text
+**Then** it should extract decision_maker.name="Dr. Smith", decision_maker.role="Owner", decision_maker.email="drsmith@example.com"
+
+**AC-FEAT-002-006: Service Detection (24/7 Emergency)**
+**Given** website text states "We offer 24/7 emergency services"
+**When** LLMExtractor analyzes the text
+**Then** it should set emergency_24_7=True
+
+**AC-FEAT-002-007: Technology Indicator Detection**
+**Given** website has "Book appointments online" and "Patient portal login"
+**When** LLMExtractor analyzes the text
+**Then** it should set online_booking=True and patient_portal=True
+
+**AC-FEAT-002-008: Personalization Context Extraction**
+**Given** website mentions "Opened 2nd location in Newton Oct 2024" and "AAHA accredited"
+**When** LLMExtractor analyzes the text
+**Then** it should populate personalization_context=["Opened 2nd location in Newton Oct 2024"] and awards_accreditations=["AAHA accredited"]
+
+**AC-FEAT-002-009: Cost Tracking with tiktoken**
+**Given** LLMExtractor is about to call OpenAI API with 2000 input tokens + 500 estimated output tokens
+**When** CostTracker.check_budget() is called
+**Then** it should calculate estimated_cost = (2000 × $0.15/1M) + (500 × $0.60/1M) = $0.0006
+
+**AC-FEAT-002-010: Cost Abort Threshold**
+**Given** cumulative OpenAI cost has reached $0.95
+**When** CostTracker.check_budget(estimated_cost=$0.08) is called
+**Then** it should raise CostLimitExceeded with message "Cost limit exceeded: $0.95 + $0.08 > $1.00"
+
+**AC-FEAT-002-011: Notion Partial Update (Field Preservation)**
+**Given** existing Notion record with Status="Qualified", Assigned To="John", Call Notes="Follow up next week"
+**When** NotionClient.update_practice_enrichment() updates only enrichment fields
+**Then** Status, Assigned To, and Call Notes should remain unchanged
+
+**AC-FEAT-002-012: Enrichment Status Update**
+**Given** successful enrichment with all data extracted
+**When** NotionClient updates the practice record
+**Then** it should set enrichment_status="Completed" and last_enrichment_date=current_timestamp
+
+**AC-FEAT-002-013: Re-enrichment Filter (30-Day Threshold)**
+**Given** Notion database with 200 practices, 50 enriched <30 days ago, 100 enriched >30 days ago, 50 never enriched
+**When** EnrichmentOrchestrator queries Notion for practices needing enrichment
+**Then** it should return 150 practices (100 stale + 50 never enriched)
+
+**AC-FEAT-002-014: Test Mode Execution (10 Practices)**
+**Given** EnrichmentOrchestrator invoked with test_mode=True
+**When** the pipeline runs
+**Then** it should enrich exactly 10 practices (first 10 from Notion query) and complete within 1-2 minutes
+
+**AC-FEAT-002-015: Automatic FEAT-003 Scoring Trigger**
+**Given** auto_trigger_scoring=True and scoring_service is provided
+**When** a practice is successfully enriched
+**Then** ScoringService.calculate_icp_score() should be called with practice_id and enrichment_data
+
+**AC-FEAT-002-016: Scoring Trigger Graceful Degradation**
+**Given** auto_trigger_scoring=False OR scoring_service=None
+**When** enrichment completes
+**Then** pipeline should complete successfully without triggering scoring (no errors)
+
+### Edge Cases & Error Handling
+
+**AC-FEAT-002-101: Website Timeout (Individual Page)**
+**Given** WebsiteScraper is crawling a practice website
+**When** the /team page exceeds 30s timeout
+**Then** it should mark /team page as failed (success=False) but continue with other pages (homepage, /about)
+
+**AC-FEAT-002-102: Entire Practice Scraping Failure**
+**Given** WebsiteScraper attempts to scrape a practice with broken website
+**When** all pages fail to load
+**Then** it should add practice to failed_practices list for retry at end of batch
+
+**AC-FEAT-002-103: LLM Extraction Failure (Rate Limit)**
+**Given** LLMExtractor calls OpenAI API during peak usage
+**When** API returns 429 error
+**Then** it should retry with exponential backoff (1s, 2s, 4s) up to 2 attempts total
+
+**AC-FEAT-002-104: Low Confidence Extraction**
+**Given** website text has vague mention "Our team of veterinarians"
+**When** LLMExtractor analyzes the text
+**Then** it should set vet_count_total=null, vet_count_confidence="low", and flag in Notion
+
+**AC-FEAT-002-105: Empty Personalization Context**
+**Given** website has only basic contact information (no awards, history, specialties)
+**When** LLMExtractor analyzes the text
+**Then** it should return personalization_context=[] (empty array)
+
+**AC-FEAT-002-106: Failed Scrape Retry (End of Batch)**
+**Given** 8 practices in failed_practices list at end of initial batch
+**When** EnrichmentOrchestrator executes retry logic
+**Then** it should re-attempt scraping for all 8 practices once
+
+**AC-FEAT-002-107: Persistent Failure Logging to Notion**
+**Given** a practice fails scraping twice
+**When** retry completes with failure
+**Then** NotionClient should update practice with enrichment_status="Failed" and enrichment_error="DNS resolution failed"
+
+**AC-FEAT-002-108: Scoring Failure (FEAT-003 Error)**
+**Given** auto_trigger_scoring=True and practice is successfully enriched
+**When** ScoringService.calculate_icp_score() raises ScoringError
+**Then** it should log error and continue with next practice (don't fail entire pipeline)
+
+**AC-FEAT-002-109: No Decision Maker Email Found**
+**Given** website lists "Dr. Jane Smith (Owner)" but no email contact
+**When** LLMExtractor analyzes the text
+**Then** it should set decision_maker.name="Dr. Jane Smith", decision_maker.role="Owner", decision_maker.email=null
+
+**AC-FEAT-002-110: Cost Limit Exceeded Mid-Batch**
+**Given** cumulative cost reaches $1.01 after 120 extractions
+**When** CostTracker.check_budget() is called for practice #121
+**Then** it should raise CostLimitExceeded and abort pipeline immediately
+
+### Non-Functional Requirements
+
+**AC-FEAT-002-201: Performance - Total Execution Time**
+Total execution time ≤14 minutes for 150 practices (test mode: 10 practices within 1-2 minutes). Scraping ≤12 min, LLM ≤2 min, Notion ≤1 min, retry ≤2 min.
+
+**AC-FEAT-002-202: Performance - Cost Efficiency**
+Total OpenAI cost ≤$0.50 for 150 practices (per-extraction $0.0006 avg, base $0.09 + retries + buffer).
+
+**AC-FEAT-002-203: Data Quality - Vet Count Detection**
+Detect vet count for ≥60% of practices (multi-page improves from ~40% homepage-only). ≥90% of detected counts have confidence="high" or "medium".
+
+**AC-FEAT-002-204: Data Quality - Decision Maker Email**
+Find explicitly stated decision maker email for ≥50% of practices. 100% of found emails are explicitly stated on website (no pattern guessing).
+
+**AC-FEAT-002-205: Data Quality - Personalization Context**
+Find 1-3 personalization facts for ≥70% of practices. ≥40% have specific facts, ≥30% have generic facts.
+
+**AC-FEAT-002-206: Reliability - Scraping Success Rate**
+≥95% scraping success rate after retry (≤8 total failures out of 150). Initial success ≥90%, retry recovers ~50% of failures.
+
+**AC-FEAT-002-207: Reliability - LLM Extraction Success Rate**
+≥97% extraction success rate (≤5 failures out of 150). Retryable errors (429, timeout) handled with retry logic.
+
+**AC-FEAT-002-208: Security - API Key Protection**
+OpenAI API key never logged in plaintext. Masked in log outputs (e.g., "sk-proj-***"), not in error messages, loaded from environment variable.
+
+**AC-FEAT-002-209: Observability - Cost Logging**
+Log cumulative OpenAI cost every 10 practices. Format: "Cost update: $0.0060 / $1.00" (cumulative / threshold). Final report with total cost, practices enriched, cost per practice.
+
+### Integration Requirements
+
+**AC-FEAT-002-301: Crawl4AI BFSDeepCrawlStrategy Integration**
+**Given** WebsiteScraper is initialized with BFSDeepCrawlStrategy
+**When** it scrapes a practice website
+**Then** it should use max_depth=1, max_pages=5, include_external=False, and URL pattern filter
+
+**AC-FEAT-002-302: OpenAI Structured Outputs Integration**
+**Given** LLMExtractor calls OpenAI API
+**When** it uses beta.chat.completions.parse with VetPracticeExtraction model
+**Then** response should be valid Pydantic object (no parsing errors)
+
+**AC-FEAT-002-303: tiktoken Integration for Cost Tracking**
+**Given** LLMExtractor is about to call OpenAI API
+**When** it counts tokens with tiktoken.encoding_for_model("gpt-4o-mini")
+**Then** token count should match actual API usage within 5%
+
+**AC-FEAT-002-304: Notion API Partial Update Integration**
+**Given** NotionClient.update_practice_enrichment() is called
+**When** it sends update payload to Notion API
+**Then** payload should contain only enrichment fields, not sales fields
+
+**AC-FEAT-002-305: FEAT-003 Scoring Service Integration**
+**Given** auto_trigger_scoring=True and scoring_service provided
+**When** EnrichmentOrchestrator completes enrichment for a practice
+**Then** it should call scoring_service.calculate_icp_score(practice_id, enrichment_data)
+
+### Data Requirements
+
+**AC-FEAT-002-401: Extraction Schema Validation**
+All extracted data must conform to VetPracticeExtraction Pydantic model. Required fields, type safety, constraints (vet_count 1-50, confidence in ["high", "medium", "low"]), defaults set correctly.
+
+**AC-FEAT-002-402: Notion Field Mapping**
+Correctly map VetPracticeExtraction fields to Notion database properties. Type compatibility (number, rich_text, email), null handling (empty fields).
+
+**AC-FEAT-002-403: Re-enrichment Date Tracking**
+Track last_enrichment_date (Notion date property) set to extraction_timestamp. ISO 8601 datetime string format.
+
+---
+
 **Note:** This file is append-only. Criteria are added by agents during `/plan` command and should not be manually edited or removed.
 
 **Last Updated:** 2025-11-03

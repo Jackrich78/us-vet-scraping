@@ -76,9 +76,10 @@ This project uses AI agents to maintain comprehensive, up-to-date documentation.
 ---
 
 #### [FEAT-002: Website Enrichment & LLM Extraction](features/FEAT-002_website-enrichment/)
-**Status:** Planning
+**Status:** Planning Complete, Ready for Implementation
 **Priority:** P0 (Critical - Core enrichment)
 **Created:** 2025-11-03
+**Last Modified:** 2025-11-03
 **Owner:** Development Team
 
 **Purpose:** Scrape practice websites using Crawl4AI (async, 5 concurrent), extract structured data using OpenAI GPT-4o-mini with structured outputs, and update existing Notion records with enrichment data.
@@ -87,8 +88,26 @@ This project uses AI agents to maintain comprehensive, up-to-date documentation.
 
 **Documents:**
 - [Product Requirements](features/FEAT-002_website-enrichment/prd.md)
+- [Research Findings](features/FEAT-002_website-enrichment/research.md)
+- [Architecture Decision](features/FEAT-002_website-enrichment/architecture.md)
+- [Acceptance Criteria](features/FEAT-002_website-enrichment/acceptance.md)
+- [Testing Strategy](features/FEAT-002_website-enrichment/testing.md)
+- [Manual Test Guide](features/FEAT-002_website-enrichment/manual-test.md)
+- [User Decisions](features/FEAT-002_website-enrichment/user-decisions.md)
 
 **Success Metric:** 150 practices enriched within 8 minutes, cost ≤$0.30
+
+**Components:**
+- WebsiteCrawler (Crawl4AI async wrapper with 5 concurrent sessions)
+- LLMExtractor (OpenAI GPT-4o-mini with structured outputs)
+- EnrichmentUpdater (Notion partial property updates)
+- RateLimiter (TPM/RPM control for OpenAI)
+
+**Test Stubs:** 51 test stubs created (unit, integration, and e2e)
+**Acceptance Criteria:** 43 criteria across functional, performance, quality, and operational requirements
+
+**Architecture Decision:** Option 2 - Crawl4AI (Async) + OpenAI GPT-4o-mini + Structured Outputs (RECOMMENDED)
+**Spike Required:** 30-minute validation of Crawl4AI extraction quality before full implementation
 
 **Dependencies:** FEAT-000, FEAT-001
 
