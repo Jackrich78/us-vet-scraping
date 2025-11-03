@@ -20,6 +20,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Comprehensive README and documentation index
 - Test-driven development support with test stub generation
 - FEAT-000: Shared Infrastructure planning complete - architecture, acceptance criteria, and testing strategy documented (2025-11-03)
+- FEAT-001: Google Maps Scraping & Notion Integration planning complete - Ready for implementation (2025-11-03)
+  - 4 planning documents created (architecture, acceptance, testing, manual-test)
+  - 30 acceptance criteria defined (27 Must Have, 3 Should Have)
+  - 8 test stub files generated (5 unit, 2 integration, 1 e2e)
+  - Architecture decision: Modular Pipeline with Apify compass/crawler-google-places actor
+  - Components: ApifyClient, DataFilter, InitialScorer, NotionBatchUpserter
 
 ### Phase Roadmap
 - Phase 1 (Current): Planning & Documentation - Complete ✅

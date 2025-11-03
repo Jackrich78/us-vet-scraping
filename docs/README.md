@@ -42,19 +42,34 @@ This project uses AI agents to maintain comprehensive, up-to-date documentation.
 ---
 
 #### [FEAT-001: Google Maps Scraping & Notion Push](features/FEAT-001_google-maps-notion/)
-**Status:** Planning
+**Status:** Planning Complete, Ready for Implementation
 **Priority:** P0 (Critical - Core data collection)
 **Created:** 2025-11-03
+**Last Modified:** 2025-11-03
 **Owner:** Development Team
 
 **Purpose:** Scrape veterinary practices from Google Maps using Apify, apply hard filters, calculate initial lead scores, and push de-duplicated results to Notion database.
 
-**Timeline:** 3 hours | **Cost:** $0.90
+**Timeline:** 3 hours | **Cost:** $1.08 ($0.72 Apify base + $0.36 filters)
 
 **Documents:**
 - [Product Requirements](features/FEAT-001_google-maps-notion/prd.md)
+- [Research Findings](features/FEAT-001_google-maps-notion/research.md)
+- [Architecture Decision](features/FEAT-001_google-maps-notion/architecture.md)
+- [Acceptance Criteria](features/FEAT-001_google-maps-notion/acceptance.md)
+- [Testing Strategy](features/FEAT-001_google-maps-notion/testing.md)
+- [Manual Test Guide](features/FEAT-001_google-maps-notion/manual-test.md)
 
 **Success Metric:** 150 qualifying MA veterinary practices in Notion within 8 minutes
+
+**Components:**
+- ApifyClient (compass/crawler-google-places actor wrapper)
+- DataFilter (website, 10+ reviews, open status filters)
+- InitialScorer (0-25 point baseline scoring)
+- NotionBatchUpserter (de-duplication + batch upload)
+
+**Test Stubs:** 8 test files created (5 unit, 2 integration, 1 e2e)
+**Acceptance Criteria:** 30 criteria (27 Must Have, 3 Should Have)
 
 **Dependencies:** FEAT-000
 
