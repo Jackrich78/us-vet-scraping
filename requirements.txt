@@ -4,7 +4,7 @@ pydantic-settings==2.5.2
 python-dotenv==1.0.1
 
 # API Clients
-apify-client==1.7.2
+apify-client==2.2.2
 notion-client==2.2.1
 openai==1.54.3
 

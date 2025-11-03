@@ -1,0 +1,38 @@
+{
+  "result": {
+    "place_id": "ChIJN1t_tDeuEmsRUsoyG83frY4",
+    "name": "Veterans Affairs Medical Center",
+    "formatted_address": "123 Main Street, Springfield, IL 62701, USA",
+    "formatted_phone_number": "(555) 123-4567",
+    "website": "https://www.va.gov/springfield-health-care",
+    "rating": 4.2,
+    "user_ratings_total": 156,
+    "opening_hours": {
+      "open_now": true,
+      "weekday_text": [
+        "Monday: 8:00 AM – 5:00 PM",
+        "Tuesday: 8:00 AM – 5:00 PM",
+        "Wednesday: 8:00 AM – 5:00 PM",
+        "Thursday: 8:00 AM – 5:00 PM",
+        "Friday: 8:00 AM – 5:00 PM",
+        "Saturday: Closed",
+        "Sunday: Closed"
+      ]
+    },
+    "types": [
+      "hospital",
+      "health",
+      "point_of_interest",
+      "establishment"
+    ],
+    "geometry": {
+      "location": {
+        "lat": 39.7817,
+        "lng": -89.6501
+      }
+    },
+    "url": "https://maps.google.com/?cid=12345678901234567890",
+    "international_phone_number": "+1 555-123-4567"
+  },
+  "status": "OK"
+}

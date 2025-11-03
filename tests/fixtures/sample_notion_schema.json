@@ -1,0 +1,66 @@
+{
+  "object": "database",
+  "id": "12345678-1234-1234-1234-123456789abc",
+  "properties": {
+    "Name": {
+      "id": "title",
+      "type": "title",
+      "title": {}
+    },
+    "Place ID": {
+      "id": "place_id",
+      "type": "rich_text",
+      "rich_text": {}
+    },
+    "Address": {
+      "id": "address",
+      "type": "rich_text",
+      "rich_text": {}
+    },
+    "Phone": {
+      "id": "phone",
+      "type": "phone_number",
+      "phone_number": {}
+    },
+    "Website": {
+      "id": "website",
+      "type": "url",
+      "url": {}
+    },
+    "Rating": {
+      "id": "rating",
+      "type": "number",
+      "number": {
+        "format": "number"
+      }
+    },
+    "Total Ratings": {
+      "id": "total_ratings",
+      "type": "number",
+      "number": {
+        "format": "number"
+      }
+    },
+    "Hours": {
+      "id": "hours",
+      "type": "rich_text",
+      "rich_text": {}
+    },
+    "Status": {
+      "id": "status",
+      "type": "select",
+      "select": {
+        "options": [
+          {"name": "Active", "color": "green"},
+          {"name": "Inactive", "color": "red"},
+          {"name": "Pending", "color": "yellow"}
+        ]
+      }
+    },
+    "Last Updated": {
+      "id": "last_updated",
+      "type": "date",
+      "date": {}
+    }
+  }
+}
