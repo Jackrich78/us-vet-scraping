@@ -10,24 +10,117 @@ This project uses AI agents to maintain comprehensive, up-to-date documentation.
 
 ## Features
 
+### Active Features (Veterinary Lead Generation Pipeline)
+
+#### [FEAT-000: Shared Infrastructure & Foundation](features/FEAT-000_shared-infrastructure/)
+**Status:** Planning
+**Priority:** P0 (Critical - Required for all other features)
+**Created:** 2025-11-03
+**Owner:** Development Team
+
+**Purpose:** Build the foundational utilities, clients, and data models that all pipeline features depend on. Includes configuration management, logging, retry logic, API clients, and error tracking.
+
+**Timeline:** 3-4 hours | **Cost:** $0
+
+**Documents:**
+- [Product Requirements](features/FEAT-000_shared-infrastructure/prd.md)
+
+**Components:**
+- Configuration Management (Pydantic v2 validation)
+- Logging (dual JSON + colorized console)
+- Retry Logic (Tenacity decorators)
+- Notion Client (rate limiting wrapper)
+- Error Tracking (aggregated reporting)
+- Pydantic Data Models (type-safe schemas)
+
+---
+
+#### [FEAT-001: Google Maps Scraping & Notion Push](features/FEAT-001_google-maps-notion/)
+**Status:** Planning
+**Priority:** P0 (Critical - Core data collection)
+**Created:** 2025-11-03
+**Owner:** Development Team
+
+**Purpose:** Scrape veterinary practices from Google Maps using Apify, apply hard filters, calculate initial lead scores, and push de-duplicated results to Notion database.
+
+**Timeline:** 3 hours | **Cost:** $0.90
+
+**Documents:**
+- [Product Requirements](features/FEAT-001_google-maps-notion/prd.md)
+
+**Success Metric:** 150 qualifying MA veterinary practices in Notion within 8 minutes
+
+**Dependencies:** FEAT-000
+
+---
+
+#### [FEAT-002: Website Enrichment & LLM Extraction](features/FEAT-002_website-enrichment/)
+**Status:** Planning
+**Priority:** P0 (Critical - Core enrichment)
+**Created:** 2025-11-03
+**Owner:** Development Team
+
+**Purpose:** Scrape practice websites using Crawl4AI (async, 5 concurrent), extract structured data using OpenAI GPT-4o-mini with structured outputs, and update existing Notion records with enrichment data.
+
+**Timeline:** 4 hours | **Cost:** $0.10
+
+**Documents:**
+- [Product Requirements](features/FEAT-002_website-enrichment/prd.md)
+
+**Success Metric:** 150 practices enriched within 8 minutes, cost ≤$0.30
+
+**Dependencies:** FEAT-000, FEAT-001
+
+---
+
+#### [FEAT-003: ICP Fit Lead Scoring & Prioritization](features/FEAT-003_lead-scoring/)
+**Status:** Planning
+**Priority:** P0 (Critical - Sales prioritization)
+**Created:** 2025-11-03
+**Owner:** Development Team
+
+**Purpose:** Calculate 0-120 point ICP fit score based on practice size, call volume indicators, technology adoption, and decision maker availability. Classify practices and assign priority tiers (Hot/Warm/Cold/Out of Scope).
+
+**Timeline:** 2 hours | **Cost:** $0
+
+**Documents:**
+- [Product Requirements](features/FEAT-003_lead-scoring/prd.md)
+
+**Success Metric:** 150 practices scored and prioritized within 60 seconds
+
+**Dependencies:** FEAT-000, FEAT-001, FEAT-002
+
+---
+
 ### Example Features
 
-#### [FEAT-001: Example Feature](features/FEAT-001_example/)
+#### [FEAT-000_example: Example Feature](features/FEAT-000_example/)
 **Status:** Example (Template Demonstration)
 **Created:** 2025-10-24
 **Purpose:** Demonstrates complete feature documentation structure
 
 **Documents:**
-- [Product Requirements](features/FEAT-001_example/prd.md)
-- [Research Findings](features/FEAT-001_example/research.md)
-- [Architecture Decision](features/FEAT-001_example/architecture.md)
-- [Acceptance Criteria](features/FEAT-001_example/acceptance.md)
-- [Testing Strategy](features/FEAT-001_example/testing.md)
-- [Manual Test Guide](features/FEAT-001_example/manual-test.md)
+- [Product Requirements](features/FEAT-000_example/prd.md)
+- [Research Findings](features/FEAT-000_example/research.md)
+- [Architecture Decision](features/FEAT-000_example/architecture.md)
+- [Acceptance Criteria](features/FEAT-000_example/acceptance.md)
+- [Testing Strategy](features/FEAT-000_example/testing.md)
+- [Manual Test Guide](features/FEAT-000_example/manual-test.md)
 
 ---
 
-*When you create real features with `/explore` and `/plan`, they will be added here automatically.*
+### Pipeline Summary
+
+**Total Implementation Time:** 12-13 hours
+**Total Cost:** $1.00 ($0.90 Apify + $0.10 OpenAI)
+**Total Runtime:** ~16 minutes (Apify 8 min + Website scraping 7.65 min + Scoring 0.9 min)
+**Expected Output:** ~35 Hot leads, ~55 Warm leads, ~40 Cold leads, ~20 Out of Scope
+
+**Feature Dependency Chain:** FEAT-000 → FEAT-001 → FEAT-002 → FEAT-003
+
+---
+
+*Use `/plan FEAT-XXX` to create complete planning documentation for each feature.*
 
 ## System Documentation
 

@@ -1,0 +1,116 @@
+{
+  "project_name": "Veterinary Lead Generation - Boston MVP",
+  "version": "1.0",
+
+  "target": {
+    "location": "Massachusetts, USA",
+    "search_terms": [
+      "veterinary clinic in Massachusetts",
+      "animal hospital in Massachusetts",
+      "vet clinic in Massachusetts"
+    ],
+    "search_radius_miles": null,
+    "excluded_cities": []
+  },
+
+  "apify": {
+    "google_maps_actor": "compass/crawler-google-places",
+    "max_google_results": 50,
+    "timeout_seconds": 300,
+    "include_reviews": false,
+    "include_images": false
+  },
+
+  "website_scraping": {
+    "max_concurrent": 5,
+    "timeout_seconds": 30,
+    "retry_attempts": 2,
+    "extraction_prompt_file": "config/website_extraction_prompt.txt",
+    "cache_enabled": true,
+    "cache_directory": "data/website_cache",
+    "delay_between_requests_seconds": 4
+  },
+
+  "linkedin_enrichment": {
+    "enabled": false,
+    "linkedin_actor": "apimaestro/linkedin-company-employees-scraper-no-cookies",
+    "trigger_condition": "no_decision_maker_from_website",
+    "job_titles_to_find": [
+      "Owner",
+      "Practice Owner",
+      "Practice Manager",
+      "Hospital Administrator",
+      "Hospital Manager",
+      "Managing Director"
+    ],
+    "max_cost_per_practice": 0.10
+  },
+
+  "filtering": {
+    "min_reviews": 10,
+    "require_website": true,
+    "exclude_closed": true,
+    "exclude_keywords": [
+      "mobile only",
+      "house call only",
+      "mobile vet service"
+    ]
+  },
+
+  "scoring": {
+    "practice_size": {
+      "sweet_spot_min": 3,
+      "sweet_spot_max": 8,
+      "corporate_threshold": 20,
+      "confidence_penalty_low": 10,
+      "confidence_penalty_medium": 5
+    },
+    "call_volume": {
+      "emergency_24_7_points": 15,
+      "high_review_threshold": 150,
+      "high_review_points": 10,
+      "boarding_points": 5
+    },
+    "technology": {
+      "online_booking_points": 8,
+      "patient_portal_points": 7,
+      "telemedicine_points": 5,
+      "digital_records_points": 3,
+      "max_tech_score": 20
+    },
+    "decision_maker": {
+      "full_contact_points": 20,
+      "name_email_points": 15,
+      "name_role_points": 10,
+      "name_only_points": 5
+    },
+    "tiers": {
+      "hot_threshold": 80,
+      "warm_threshold": 50,
+      "cold_threshold": 20
+    }
+  },
+
+  "notion": {
+    "batch_size": 10,
+    "rate_limit_delay_seconds": 0.35,
+    "update_existing_records": true,
+    "preserve_fields_on_update": [
+      "Status",
+      "Assigned To",
+      "Research Notes",
+      "Call Notes",
+      "Next Action",
+      "Next Follow-Up Date",
+      "Last Contact Date",
+      "Outreach Attempts"
+    ]
+  },
+
+  "output": {
+    "scrape_run_id_format": "{city_short}-{date}-{run_number}",
+    "log_level": "INFO",
+    "save_raw_data": true,
+    "raw_data_directory": "data/raw"
+  }
+}

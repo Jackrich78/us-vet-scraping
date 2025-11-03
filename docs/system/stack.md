@@ -1,298 +1,362 @@
 # Technology Stack
 
-**Last Updated:** 2025-10-24
-**Status:** Template - Update for your project
+**Last Updated:** 2025-11-03
+**Status:** Active
 
 ## Overview
 
-This document lists all technologies, frameworks, libraries, and tools used in the project, including versions and rationale.
+This document lists all technologies, frameworks, libraries, and tools used in the US Veterinary Lead Generation System.
 
-**Project Type:** [Web App / API / CLI / Mobile / etc.]
-
-**Phase:** Phase 1 - Planning & Documentation
+**Project Type:** CLI / Batch Processing Pipeline
+**Phase:** Phase 1 - Planning & Documentation (Ready for Phase 2 - Implementation)
 
 ## Core Technologies
 
-### Language(s)
+### Language
 
-**[Primary Language]**
-- **Version:** [X.Y.Z]
-- **Why:** [Rationale for choosing this language]
-- **Use Cases:** [Where it's used: backend, frontend, etc.]
+**Python**
+- **Version:** 3.11+
+- **Why:** Rich ecosystem for web scraping, API integration, and data processing. Excellent library support for Apify, OpenAI, and Notion APIs.
+- **Use Cases:** All pipeline components - scraping, enrichment, scoring, and data push
+- **Environment:** Virtual environment (venv) for dependency isolation
 
-**[Secondary Language]** (if applicable)
-- **Version:** [X.Y.Z]
-- **Why:** [Rationale]
-- **Use Cases:** [Usage]
+## Backend / Processing Pipeline
 
-## Frontend (If Applicable)
+### Script Type
 
-### Framework
-
-**[Framework Name]** (e.g., React, Vue, Svelte)
-- **Version:** [X.Y.Z]
-- **Why:** [Rationale]
-- **Documentation:** [Link]
-
-### UI Libraries
-
-- **Component Library:** [e.g., shadcn/ui, Material-UI]
-- **Styling:** [e.g., Tailwind CSS, CSS-in-JS]
-- **Icons:** [e.g., Lucide, Heroicons]
-
-### State Management
-
-- **Tool:** [e.g., Redux, Zustand, Context API]
-- **Why:** [Rationale]
-
-### Build Tool
-
-- **Tool:** [e.g., Vite, Webpack, Parcel]
-- **Version:** [X.Y.Z]
-
-## Backend (If Applicable)
-
-### Framework
-
-**[Framework Name]** (e.g., Express, FastAPI, Rails)
-- **Version:** [X.Y.Z]
-- **Why:** [Rationale]
-- **Documentation:** [Link]
-
-### API Type
-
-- **REST** / **GraphQL** / **gRPC**
-- **Why:** [Rationale for API architecture choice]
-
-### Authentication
-
-- **Method:** [JWT, OAuth, Session-based]
-- **Library:** [e.g., Passport.js, NextAuth, Auth0]
+**Batch Processing Pipeline**
+- **Execution:** Command-line script with orchestration
+- **Mode:** One-time or recurring (cron-scheduled)
+- **Test Support:** `--test` flag for limited 10-practice runs during development
 
 ## Database
 
 ### Primary Database
 
-**[Database Name]** (e.g., PostgreSQL, MongoDB, SQLite)
-- **Version:** [X.Y.Z]
-- **Why:** [Rationale]
-- **ORM/Query Builder:** [e.g., Prisma, TypeORM, SQLAlchemy]
+**Notion (via API)**
+- **Version:** API v1 (2022-06-28)
+- **Why:** Client requirement - Notion workspace already in use for sales workflow
+- **Client Library:** notion-client 2.2.1
+- **Schema:** 48-field database for veterinary practice leads
+- **Rate Limits:** 3 requests/second
+- **Batch Strategy:** 10 records per API call (conservative to stay under rate limits)
 
-### Caching (If Applicable)
+### Local Storage
 
-**[Cache Name]** (e.g., Redis, Memcached)
-- **Version:** [X.Y.Z]
-- **Use Cases:** [Session storage, rate limiting, etc.]
+**File System (JSON/CSV)**
+- **Purpose:** Raw data backup and debugging
+- **Structure:**
+  - `data/raw/` - Raw API responses (Apify, OpenAI)
+  - `data/processed/` - Transformed data before Notion push
+  - `data/logs/` - Execution logs and error reports
+
+## Core Dependencies
+
+### Web Scraping & API Clients
+
+**apify-client**
+- **Version:** 1.7.2
+- **Purpose:** Google Maps scraping, optional LinkedIn enrichment
+- **Documentation:** https://docs.apify.com/api/client/python
+
+**crawl4ai**
+- **Version:** 0.3.74
+- **Purpose:** Website scraping with JavaScript rendering
+- **Features:** Headless browser automation, dynamic content handling
+- **Documentation:** https://crawl4ai.com/docs
+
+### AI/ML Integration
+
+**openai**
+- **Version:** 1.54.3
+- **Purpose:** GPT-4o-mini for website data extraction
+- **Model:** gpt-4o-mini
+- **Cost:** ~$0.02 per extraction call
+- **Rate Limits:** Tier-based (verified during setup)
+- **Documentation:** https://platform.openai.com/docs
+
+### Data Storage
+
+**notion-client**
+- **Version:** 2.2.1
+- **Purpose:** Push/update leads in Notion database
+- **API Version:** 2022-06-28
+- **Documentation:** https://ramnes.github.io/notion-sdk-py
+
+### Utilities
+
+**python-dotenv**
+- **Version:** 1.0.1
+- **Purpose:** Load environment variables from .env file
+
+**pydantic**
+- **Version:** 2.9.2
+- **Purpose:** Data validation and settings management
+- **Use:** Config validation, API response schemas
+
+**tenacity**
+- **Version:** 9.0.0
+- **Purpose:** Retry logic with exponential backoff
+- **Configuration:** 3 attempts, delays: 5s, 10s, 20s
+
+**requests**
+- **Version:** 2.32.3
+- **Purpose:** HTTP requests (fallback for simple API calls)
+
+**beautifulsoup4**
+- **Version:** 4.12.3
+- **Purpose:** HTML parsing (supplementary to Crawl4AI)
 
 ## Testing
 
 ### Test Framework
 
-- **Unit Tests:** [e.g., Jest, pytest, cargo test]
-- **Integration Tests:** [Same or different framework]
-- **E2E Tests:** [e.g., Playwright, Cypress]
+**pytest**
+- **Version:** 8.3.3
+- **Purpose:** Unit and integration testing
+- **Coverage:** pytest-cov for coverage reports
+- **Target:** 80%+ coverage for core logic
 
-### Test Utilities
+### Test Strategy
 
-- **Mocking:** [e.g., Jest mocks, pytest-mock]
-- **Assertions:** [e.g., expect, assert]
-- **Coverage:** [e.g., c8, coverage.py]
+- **Unit Tests:** Individual scrapers, scoring logic, data transformers
+- **Integration Tests:** Full pipeline with test mode (10 practices)
+- **Mocking:** pytest-mock for external API calls (avoid costs during testing)
+- **Fixtures:** Sample Apify/LLM responses for reproducible tests
 
 ## Development Tools
 
 ### Package Manager
 
-- **Tool:** [npm, pnpm, yarn, pip, cargo]
-- **Version:** [X.Y.Z]
-- **Lock File:** [package-lock.json, etc.]
+- **Tool:** pip
+- **Version:** 24.0+
+- **Lock File:** requirements.txt
+- **Virtual Environment:** venv (Python standard library)
 
 ### Code Quality
 
 **Linting:**
-- **Tool:** [ESLint, Ruff, Clippy]
-- **Config:** [Link to config file]
+- **Tool:** ruff
+- **Version:** 0.7.0+
+- **Config:** pyproject.toml or ruff.toml
+- **Rules:** Google Python Style Guide compliance
 
 **Formatting:**
-- **Tool:** [Prettier, Black, rustfmt]
-- **Config:** [Link to config file]
+- **Tool:** black
+- **Version:** 24.10.0+
+- **Line Length:** 100 characters
+- **Config:** pyproject.toml
 
 **Type Checking:**
-- **Tool:** [TypeScript, mypy, type hints]
-- **Strictness:** [Strict mode enabled/disabled]
+- **Tool:** Python type hints (PEP 484)
+- **Enforcement:** Optional mypy for strict type checking
+- **Coverage:** All public functions annotated
 
 ### Version Control
 
-- **Git:** [Version]
+- **Git:** 2.x
 - **Branch Strategy:** Feature branches (see [git-workflow.md](../sop/git-workflow.md))
-- **Commit Format:** Conventional commits
+- **Commit Format:** Conventional commits (feat, fix, docs, test, refactor, chore)
 
 ## Deployment
 
 ### Hosting
 
-**Platform:** [e.g., Vercel, AWS, Heroku, DigitalOcean]
+**Platform:** Local execution (developer machine)
 
 **Environments:**
-- Development: [Local/staging URL]
-- Production: [Production URL]
+- **Development:** Local with --test flag (10 practices)
+- **Production:** Local full run (150+ practices)
+- **Future:** Cron job or cloud scheduler for recurring runs
 
 ### CI/CD
 
-**Platform:** [GitHub Actions / GitLab CI / CircleCI]
+**Platform:** GitHub Actions (future enhancement)
 
-**Pipeline:**
-1. Lint and type check
-2. Run tests
-3. Build
-4. Deploy (on merge to main)
+**Planned Pipeline:**
+1. Lint with ruff
+2. Format check with black
+3. Run pytest with coverage
+4. Validate config schema
 
-### Containerization (If Applicable)
-
-**Docker:**
-- **Version:** [X.Y.Z]
-- **Compose:** [Yes/No]
-- **Registry:** [Docker Hub, GitHub Packages, etc.]
+**Note:** CI/CD deferred to Phase 3 - MVP runs locally
 
 ## Monitoring & Observability
 
 ### Logging
 
-- **Tool:** [e.g., Winston, Pino, Python logging]
-- **Destination:** [Console, file, service]
+- **Tool:** Python `logging` module (standard library)
+- **Format:** Structured JSON logs
+- **Levels:** DEBUG (dev), INFO (production), WARNING, ERROR, CRITICAL
+- **Destinations:**
+  - Console: Human-readable output with colors
+  - File: `data/logs/scraper_YYYY-MM-DD_HH-MM-SS.log`
+  - Rotation: Daily logs, keep last 7 days
 
 ### Error Tracking
 
-- **Tool:** [e.g., Sentry, Rollbar, Bugsnag]
-- **Integration:** [How errors are captured]
+- **Tool:** Custom error aggregation (no external service for MVP)
+- **Strategy:**
+  - Log all errors with context
+  - Aggregate error summary at end of run
+  - Email report (optional future enhancement)
 
-### Analytics
+### Cost Tracking
 
-- **Tool:** [e.g., Google Analytics, Plausible, Mixpanel]
-- **Privacy:** [GDPR-compliant, anonymized]
+- **Strategy:** Log estimated costs per API call
+- **Calculation:**
+  - Apify: $0.01 per Google Maps result
+  - OpenAI: $0.02 per extraction call (gpt-4o-mini)
+  - Total budget: <$10 for 150 practices
+- **Reporting:** Cost summary in final log output
 
-## AI/ML Tools (This Template)
+## AI/ML Tools
 
 ### Claude Code
 
-- **Version:** [Latest]
-- **Configuration:** [CLAUDE.md](../../CLAUDE.md)
-- **Agents:** 7 specialized agents (5 active, 2 Phase 2)
-- **Commands:** 6 slash commands (3 active, 3 Phase 2)
+- **Version:** Latest (Sonnet 4.5)
+- **Configuration:** [CLAUDE.md](../../CLAUDE.md), [.claude/CLAUDE.md](../../.claude/CLAUDE.md)
+- **Agents:** Specialized planning and implementation agents
+- **Commands:** `/plan`, `/build`, `/test`, `/commit`, `/prime`, `/explore`
+- **Purpose:** AI-assisted development workflow
 
-### MCPs
+### MCPs (Model Context Protocol)
 
-- **Archon:** Optional knowledge management
-- **[Other MCPs]:** [If any]
+**Archon MCP**
+- **Status:** Available
+- **Purpose:** Knowledge management, web research, task tracking
+- **Use:** Research phase for technical approaches and documentation
 
 ## Development Setup
 
 ### Prerequisites
 
 ```bash
-# [Language] version
-[language] --version  # [X.Y.Z]
+# Python version
+python3 --version  # 3.11+
 
-# [Package manager]
-[package-manager] --version  # [X.Y.Z]
+# pip version
+pip --version  # 24.0+
 
-# [Database] (if applicable)
-[database] --version  # [X.Y.Z]
+# Playwright (for Crawl4AI)
+playwright install
 ```
 
 ### Installation
 
 ```bash
 # Clone repository
-git clone [repo-url]
-cd [project-name]
+git clone https://github.com/username/us_vet_scraping.git
+cd us_vet_scraping
+
+# Create virtual environment
+python3 -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
 
 # Install dependencies
-[install-command]  # e.g., npm install
+pip install -r requirements.txt
 
-# Setup environment
+# Setup environment variables
 cp .env.example .env
-# Edit .env with your values
+# Edit .env with your API keys:
+#   APIFY_API_KEY=your_apify_key
+#   OPENAI_API_KEY=your_openai_key
+#   NOTION_API_KEY=your_notion_key
+#   NOTION_DATABASE_ID=2a0edda2a9a081d98dc9daa43c65e744
 
-# Run database migrations
-[migration-command]  # e.g., npm run migrate
+# Validate configuration
+python -m src.utils.config_loader --validate
 
-# Start development server
-[dev-command]  # e.g., npm run dev
+# Run in test mode (10 practices)
+python main.py --config config/config.json --test
+
+# Run full pipeline
+python main.py --config config/config.json
 ```
 
 ## Performance Considerations
 
-### Bundle Size (Frontend)
+### Execution Time
 
-- **Target:** < 200KB initial bundle (gzipped)
-- **Code Splitting:** Enabled
-- **Tree Shaking:** Enabled
+- **Google Maps Scraping:** ~5 minutes for 150-200 practices (Apify actor speed)
+- **Website Enrichment:** ~1.5 hours for 150 practices (3-5s per site * 150 = 450-750s + LLM calls)
+- **Scoring:** < 1 minute (local computation)
+- **Notion Push:** ~1 minute (batched API calls)
+- **Total MVP Run:** ~2 hours end-to-end
 
-### API Performance (Backend)
+### Rate Limiting
 
-- **Target:** < 200ms average response time
-- **Optimization:** Caching, database indexing
-- **Monitoring:** Response time tracking
+- **Apify:** No strict limits (usage-based billing)
+- **OpenAI:** Tier-based (verify account tier before full run)
+- **Notion:** 3 req/s → use 10 records per call, 0.3s delay between calls
+- **Website Scraping:** 3-5s delay between requests (respectful scraping)
 
 ## Security
 
 ### Dependencies
 
-- **Audit Tool:** [npm audit, pip-audit, cargo audit]
-- **Automation:** Dependabot enabled
-- **Policy:** Update within 1 week for critical vulnerabilities
+- **Audit Tool:** `pip-audit` or `safety check`
+- **Automation:** GitHub Dependabot (future)
+- **Policy:** Review and update dependencies monthly
 
 ### Secrets Management
 
-- **Tool:** [Environment variables, dotenv, Vault]
-- **Storage:** [GitHub Secrets, AWS Secrets Manager]
+- **Tool:** Environment variables via python-dotenv
+- **Storage:** `.env` file (gitignored)
+- **Production:** Environment variables in CI/CD or cloud scheduler
+- **Never commit:** API keys, tokens, database IDs
+
+### API Key Permissions
+
+- **Apify:** Read/Execute actors only (no write access to account)
+- **OpenAI:** API key (not organization admin)
+- **Notion:** Integration with specific database access only (not workspace admin)
 
 ## Documentation
 
 ### Code Documentation
 
-- **Style:** [JSDoc, docstrings, rustdoc]
-- **Coverage:** All public APIs documented
+- **Style:** Google Python docstrings
+- **Coverage:** All public functions, classes, and modules
+- **Example:**
+  ```python
+  def calculate_lead_score(practice: Practice) -> int:
+      """Calculate ICP fit score for a veterinary practice.
 
-### API Documentation
+      Args:
+          practice: Practice object with enriched data
 
-- **Tool:** [Swagger/OpenAPI, GraphQL Playground]
-- **Location:** [/api/docs or link]
+      Returns:
+          Score from 0-120 based on ICP fit criteria
+      """
+  ```
 
-## Upgrade Strategy
+### Project Documentation
 
-### Major Version Updates
-
-- **Frequency:** [Annually, per release cycle]
-- **Process:**
-  1. Review changelog and breaking changes
-  2. Update in development environment
-  3. Run full test suite
-  4. Update documentation
-  5. Deploy to staging
-  6. Monitor for issues
-  7. Deploy to production
-
-### Security Patches
-
-- **Frequency:** Immediately for critical, weekly for non-critical
-- **Process:** Automated via Dependabot PRs
+- **Location:** `docs/` directory
+- **Structure:** System docs, SOPs, feature docs, templates
+- **Maintenance:** Update with `/ update-docs` command
 
 ## Tech Debt Tracking
 
-*Document known technical debt*
+*Document known technical debt (MVP intentional shortcuts)*
 
-- [Tech debt item 1]: [Description and plan to address]
-- [Tech debt item 2]: [Description and plan]
+- **No email verification:** Pattern guessing only (Phase 2: SMTP verification)
+- **No proxy rotation:** Relying on Crawl4AI defaults (Phase 2: Add if blocking occurs)
+- **No recurring de-duplication:** One-time scrape (Phase 2: FEAT-005)
+- **Manual Notion schema setup:** No automated schema validation (Phase 2: Add Pydantic validation)
+- **Local execution only:** No cloud deployment (Phase 3: Cloud scheduler)
 
 ## Alternative Technologies Considered
 
-*Document alternatives and why they weren't chosen*
-
 | Technology | Considered For | Why Not Chosen |
 |------------|----------------|----------------|
-| [Alt 1] | [Use case] | [Reason] |
-| [Alt 2] | [Use case] | [Reason] |
+| Scrapy | Website scraping | Crawl4AI better for JavaScript-heavy sites |
+| Claude API directly | LLM extraction | OpenAI GPT-4o-mini more cost-effective ($0.02 vs $0.15 per call) |
+| Airtable | Lead database | Client already uses Notion |
+| BeautifulSoup only | Web scraping | Doesn't handle JavaScript rendering (Crawl4AI does) |
+| Selenium | Browser automation | Crawl4AI built on Playwright (faster, more reliable) |
+| Langchain | LLM orchestration | Over-engineered for simple extraction task |
 
 ---
 

@@ -1,0 +1,93 @@
+You are analyzing a veterinary practice website to extract structured data for B2B sales lead generation.
+
+From the provided website content, extract the following information in JSON format:
+
+{
+  "vet_count": {
+    "total": <number or null>,
+    "confidence": "high|medium|low",
+    "source": "explicit count mentioned|counted from team page|estimated from context"
+  },
+
+  "veterinarians": [
+    {
+      "name": "Dr. First Last",
+      "title": "Owner|Associate Veterinarian|Chief Veterinarian",
+      "specialties": ["surgery", "internal medicine", "etc"]
+    }
+  ],
+
+  "decision_maker": {
+    "name": "First Last",
+    "role": "Owner|Practice Manager|Hospital Administrator|null",
+    "email": "email@domain.com or null",
+    "phone": "phone number or null",
+    "confidence": "high|medium|low"
+  },
+
+  "services": {
+    "emergency_24_7": true|false,
+    "specialty_services": ["Surgery", "Dental", "Oncology", "etc"],
+    "wellness_programs": true|false,
+    "boarding_services": true|false,
+    "grooming_services": true|false,
+    "house_calls": true|false
+  },
+
+  "technology_features": {
+    "online_booking": true|false,
+    "telemedicine": true|false,
+    "patient_portal": true|false,
+    "digital_records_mentioned": true|false,
+    "live_chat": true|false,
+    "mobile_app": true|false
+  },
+
+  "multiple_locations": {
+    "has_multiple": true|false,
+    "location_count": <number or null>,
+    "locations": ["City1", "City2"]
+  },
+
+  "personalization_context": {
+    "unique_facts": [
+      "Recently opened 2nd location in Newton (2024)",
+      "Fear-free certified practice",
+      "Dr. Sarah Johnson featured in Boston Magazine Best Vets 2024",
+      "Only practice in Boston specializing in exotic birds",
+      "Family-owned for 3 generations since 1952"
+    ],
+    "awards_recognition": [],
+    "community_involvement": [],
+    "recent_expansions": [],
+    "unique_specialties": []
+  },
+
+  "operating_hours": {
+    "formatted": "Mon-Fri: 8am-7pm, Sat: 9am-5pm, Sun: Closed",
+    "extended_hours": true|false,
+    "weekend_hours": true|false
+  }
+}
+
+CRITICAL INSTRUCTIONS:
+1. The "personalization_context.unique_facts" field is ESSENTIAL - find at least 2-3 unique, specific facts about this practice that could be conversation starters for a cold call.
+2. For vet_count, count individual veterinarians listed on team/staff pages. Be conservative - only report if confident. Better to return null than guess incorrectly.
+3. For decision_maker, look for titles like "Owner", "Practice Owner", "Practice Manager", "Hospital Administrator", "Managing Director".
+4. Extract ACTUAL names when possible, not generic titles.
+5. Return null for any field where information is not found - do not guess or hallucinate.
+6. For services and technology, only mark as true if explicitly mentioned or clearly visible on the website.
+7. Personalization context should be SPECIFIC and UNIQUE to this practice, not generic facts that apply to all vets.
+
+Examples of GOOD personalization context:
+- "Opened in 1952, family-owned for 3 generations"
+- "Dr. Johnson was named Boston Magazine Best Vet 2024"
+- "Only practice in Greater Boston specializing in avian medicine"
+- "Recently invested $2M in new surgical suite (opened March 2024)"
+- "Sponsors the Boston Animal Rescue League"
+
+Examples of BAD personalization context (too generic):
+- "They care about animals"
+- "Friendly staff"
+- "Good reviews"
+- "Offers veterinary services"
