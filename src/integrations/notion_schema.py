@@ -19,15 +19,16 @@ class NotionSchemaError(Exception):
 
 
 # Required properties for FEAT-001 Google Maps → Notion pipeline
+# Maps to existing database schema: "Veterinary Lead Pipeline - Boston"
 REQUIRED_PROPERTIES = {
-    "Place ID": "title",  # Title field (unique identifier)
-    "Business Name": "rich_text",
+    "Name": "title",  # Practice name (unique identifier)
+    "Google Place ID": "rich_text",  # Google Maps Place ID
     "Address": "rich_text",
     "Phone": "phone_number",
     "Website": "url",
-    "Review Count": "number",
-    "Star Rating": "number",
-    "Initial Score": "number",
+    "Google Review Count": "number",
+    "Google Rating": "number",
+    "Lead Score": "number",  # Initial ICP fit score (0-25)
     "Status": "select",
 }
 

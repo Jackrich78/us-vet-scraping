@@ -1,0 +1,33 @@
+{
+  "practice_id": "test-010",
+  "practice_name": "Minimal Practice Test Clinic",
+  "google_maps_data": {
+    "rating": 3.5,
+    "address": "3333 Basic Boulevard, Garland, TX 75040"
+  },
+  "enrichment_data": {
+    "vet_count": 2,
+    "vet_count_confidence": "medium",
+    "reviews": 12,
+    "number_of_locations": 1,
+    "emergency_services": false,
+    "website": null,
+    "decision_maker_name": null,
+    "decision_maker_title": null
+  },
+  "enrichment_status": "Completed",
+  "expected_score": {
+    "practice_size": 10,
+    "call_volume": 0,
+    "technology": 0,
+    "baseline": 20,
+    "decision_maker": 0,
+    "total_before_penalty": 30,
+    "confidence_multiplier": 0.9,
+    "final_score": 27,
+    "note": "Minimal practice, medium confidence (0.9x penalty)"
+  },
+  "expected_tier": "❄️ Cold (20-44)",
+  "expected_confidence_flags": "⚠️ Medium Confidence Vet Count\n⚠️ Website Not Found\n⚠️ Decision Maker Not Found",
+  "scenario": "Minimal practice with low score and multiple missing fields"
+}

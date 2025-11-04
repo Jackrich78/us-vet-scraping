@@ -1,0 +1,33 @@
+{
+  "practice_id": "test-008",
+  "practice_name": "Corporate Practice Test Clinic",
+  "google_maps_data": {
+    "rating": 3.9,
+    "address": "1111 Corporate Drive, Irving, TX 75038"
+  },
+  "enrichment_data": {
+    "vet_count": 15,
+    "vet_count_confidence": "high",
+    "reviews": 300,
+    "number_of_locations": 5,
+    "emergency_services": true,
+    "website": "https://corpclinic.com",
+    "decision_maker_name": null,
+    "decision_maker_title": null
+  },
+  "enrichment_status": "Completed",
+  "expected_score": {
+    "practice_size": 15,
+    "call_volume": 35,
+    "technology": 10,
+    "baseline": 20,
+    "decision_maker": 0,
+    "total_before_penalty": 80,
+    "confidence_multiplier": 1.0,
+    "final_score": 80,
+    "note": "Corporate practice with 15 vets, low rating"
+  },
+  "expected_tier": "🌡️ Warm (45-84)",
+  "expected_confidence_flags": "⚠️ Decision Maker Not Found",
+  "scenario": "Corporate practice (10+ vets) with score >= 20 (not out of scope)"
+}

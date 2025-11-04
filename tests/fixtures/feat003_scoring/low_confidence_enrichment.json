@@ -1,0 +1,33 @@
+{
+  "practice_id": "test-004",
+  "practice_name": "Low Confidence Test Clinic",
+  "google_maps_data": {
+    "rating": 4.7,
+    "address": "321 Elm Boulevard, San Antonio, TX 78201"
+  },
+  "enrichment_data": {
+    "vet_count": 8,
+    "vet_count_confidence": "low",
+    "reviews": 200,
+    "number_of_locations": 2,
+    "emergency_services": true,
+    "website": "https://lowconfclinic.com",
+    "decision_maker_name": "Dr. Emily Rodriguez",
+    "decision_maker_title": "Managing Partner"
+  },
+  "enrichment_status": "Completed",
+  "expected_score": {
+    "practice_size": 25,
+    "call_volume": 25,
+    "technology": 10,
+    "baseline": 40,
+    "decision_maker": 20,
+    "total_before_penalty": 120,
+    "confidence_multiplier": 0.7,
+    "final_score": 84,
+    "note": "Low confidence vet count (0.7x penalty applied)"
+  },
+  "expected_tier": "🌡️ Warm (45-84)",
+  "expected_confidence_flags": "⚠️ Low Confidence Vet Count",
+  "scenario": "C - Low confidence enrichment data"
+}

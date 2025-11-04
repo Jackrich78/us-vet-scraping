@@ -1,0 +1,25 @@
+{
+  "practice_id": "test-006",
+  "practice_name": "Enrichment Failed Test Clinic",
+  "google_maps_data": {
+    "rating": 4.3,
+    "address": "777 Cedar Lane, El Paso, TX 79901"
+  },
+  "enrichment_data": null,
+  "enrichment_status": "Failed",
+  "enrichment_error": "Website scraping timeout after 30 seconds",
+  "expected_score": {
+    "practice_size": 0,
+    "call_volume": 0,
+    "technology": 0,
+    "baseline": 40,
+    "decision_maker": 0,
+    "total_before_penalty": 40,
+    "confidence_multiplier": 1.0,
+    "final_score": 40,
+    "note": "Baseline-only scoring (enrichment failed)"
+  },
+  "expected_tier": "⏳ Pending Enrichment",
+  "expected_confidence_flags": "",
+  "scenario": "E - Enrichment failed, baseline only"
+}

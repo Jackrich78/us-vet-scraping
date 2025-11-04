@@ -1,0 +1,33 @@
+{
+  "practice_id": "test-009",
+  "practice_name": "Sweet Spot Practice Test Clinic",
+  "google_maps_data": {
+    "rating": 4.9,
+    "address": "2222 Success Street, Frisco, TX 75034"
+  },
+  "enrichment_data": {
+    "vet_count": 5,
+    "vet_count_confidence": "high",
+    "reviews": 250,
+    "number_of_locations": 3,
+    "emergency_services": true,
+    "website": "https://sweetspotclinic.com",
+    "decision_maker_name": "Dr. Robert Anderson",
+    "decision_maker_title": "Owner & Lead Veterinarian"
+  },
+  "enrichment_status": "Completed",
+  "expected_score": {
+    "practice_size": 25,
+    "call_volume": 35,
+    "technology": 10,
+    "baseline": 40,
+    "decision_maker": 20,
+    "total_before_penalty": 130,
+    "confidence_multiplier": 1.0,
+    "final_score": 120,
+    "note": "Ideal sweet spot practice - capped at 120"
+  },
+  "expected_tier": "🔥 Hot (85-120)",
+  "expected_confidence_flags": "",
+  "scenario": "Perfect sweet spot: 5 vets, emergency, high reviews, decision maker"
+}

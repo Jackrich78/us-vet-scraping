@@ -53,16 +53,16 @@ class NotionMapper:
     def map_to_notion_properties(self, practice: VeterinaryPractice) -> Dict[str, Any]:
         """Transform VeterinaryPractice to Notion properties dict.
 
-        Maps fields according to AC-FEAT-001-010:
-        - Place ID → Title (unique identifier)
-        - Business Name → Rich Text
-        - Address → Rich Text
-        - Phone → Phone Number (E.164 format)
-        - Website → URL
-        - Review Count → Number
-        - Star Rating → Number (rounded to 1 decimal)
-        - Initial Score → Number
-        - Status → Select (default: "New Lead")
+        Maps fields to existing Notion database schema:
+        - Practice Name → Name (Title field)
+        - Place ID → Google Place ID (Rich Text)
+        - Address → Address (Rich Text)
+        - Phone → Phone (Phone Number, E.164 format)
+        - Website → Website (URL)
+        - Review Count → Google Review Count (Number)
+        - Star Rating → Google Rating (Number, rounded to 1 decimal)
+        - Initial Score → Lead Score (Number, 0-25)
+        - Status → Status (Select, default: "New Lead")
 
         Args:
             practice: VeterinaryPractice instance with validated data
@@ -72,38 +72,38 @@ class NotionMapper:
 
         Example:
             >>> properties = mapper.map_to_notion_properties(practice)
-            >>> assert "Place ID" in properties
+            >>> assert "Name" in properties
             >>> assert properties["Status"]["select"]["name"] == "New Lead"
         """
         properties = {}
 
-        # Place ID → Title (unique identifier, required by Notion)
-        properties["Place ID"] = self._format_title(practice.place_id)
+        # Practice Name → Name (Title field, unique identifier)
+        properties["Name"] = self._format_title(practice.practice_name)
 
-        # Business Name → Rich Text
-        properties["Business Name"] = self._format_rich_text(practice.practice_name)
+        # Place ID → Google Place ID (Rich Text)
+        properties["Google Place ID"] = self._format_rich_text(practice.place_id)
 
-        # Address → Rich Text
+        # Address → Address (Rich Text)
         properties["Address"] = self._format_rich_text(practice.address)
 
-        # Phone → Phone Number (E.164 format, can be null)
+        # Phone → Phone (Phone Number, E.164 format, can be null)
         properties["Phone"] = self._format_phone_number(practice.phone)
 
-        # Website → URL (can be null)
+        # Website → Website (URL, can be null)
         properties["Website"] = self._format_url(practice.website)
 
-        # Review Count → Number (can be null)
-        properties["Review Count"] = self._format_number(practice.google_review_count)
+        # Review Count → Google Review Count (Number, can be null)
+        properties["Google Review Count"] = self._format_number(practice.google_review_count)
 
-        # Star Rating → Number (rounded to 1 decimal, can be null)
-        properties["Star Rating"] = self._format_number(
+        # Star Rating → Google Rating (Number, rounded to 1 decimal, can be null)
+        properties["Google Rating"] = self._format_number(
             round(practice.google_rating, 1) if practice.google_rating is not None else None
         )
 
-        # Initial Score → Number (0-25, required)
-        properties["Initial Score"] = self._format_number(practice.initial_score)
+        # Initial Score → Lead Score (Number, 0-25, required)
+        properties["Lead Score"] = self._format_number(practice.initial_score)
 
-        # Status → Select (default: "New Lead")
+        # Status → Status (Select, default: "New Lead")
         properties["Status"] = self._format_select("New Lead")
 
         logger.debug(

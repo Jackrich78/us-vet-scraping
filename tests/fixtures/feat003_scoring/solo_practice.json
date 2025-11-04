@@ -1,0 +1,33 @@
+{
+  "practice_id": "test-007",
+  "practice_name": "Solo Practice Test Clinic",
+  "google_maps_data": {
+    "rating": 4.2,
+    "address": "999 Birch Court, Plano, TX 75023"
+  },
+  "enrichment_data": {
+    "vet_count": 1,
+    "vet_count_confidence": "high",
+    "reviews": 45,
+    "number_of_locations": 1,
+    "emergency_services": false,
+    "website": null,
+    "decision_maker_name": "Dr. Jane Smith",
+    "decision_maker_title": "Owner"
+  },
+  "enrichment_status": "Completed",
+  "expected_score": {
+    "practice_size": 10,
+    "call_volume": 0,
+    "technology": 0,
+    "baseline": 40,
+    "decision_maker": 20,
+    "total_before_penalty": 70,
+    "confidence_multiplier": 1.0,
+    "final_score": 70,
+    "note": "Solo practice with 1 vet"
+  },
+  "expected_tier": "🌡️ Warm (45-84)",
+  "expected_confidence_flags": "⚠️ Website Not Found",
+  "scenario": "Solo practice (1 vet) with score >= 20 (not out of scope)"
+}

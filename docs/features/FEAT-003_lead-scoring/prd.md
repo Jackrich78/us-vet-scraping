@@ -6,31 +6,45 @@
 **Status:** Planning
 **Owner:** Development Team
 **Created:** 2025-11-03
+**Updated:** 2025-11-04
 
 ## Executive Summary
 
-Calculate a 0-120 point ICP (Ideal Customer Profile) fit score for each veterinary practice based on practice size, call volume indicators, technology adoption, and decision maker availability. Classify practices by size (Solo/Small/Sweet Spot/Large/Corporate) and assign priority tiers (Hot/Warm/Cold/Out of Scope). Generate score breakdown explanations for sales context.
+Calculate a 0-120 point ICP (Ideal Customer Profile) fit score for each veterinary practice based on practice size, call volume indicators, technology adoption, and decision maker availability. This feature implements a **dual scoring system** (initial_score from FEAT-001 baseline + lead_score from enrichment) with **graceful degradation** for partial/missing enrichment data. Supports both **auto-trigger** integration with FEAT-002 and **manual CLI rescore** command.
 
-**Success Metric:** 150 practices scored and prioritized within 30 seconds, ready for sales outreach.
+**Key Capabilities:**
+- Dual scoring: initial_score (Google Maps baseline) + lead_score (enrichment-based)
+- Auto-triggered after FEAT-002 enrichment completes
+- Manual rescore via CLI command
+- Graceful handling of incomplete/low-confidence/missing enrichment data
+- Score breakdown with confidence flags
+- No blocking on enrichment failures
+
+**Success Metric:** 150 practices scored within 30 seconds with accurate 0-120 scores, even with partial data.
 
 ## Problem Statement
 
 Without systematic ICP fit scoring:
 - Sales reps waste time on low-fit prospects (e.g., solo practitioners)
-- High-potential practices (Sweet Spot) buried in unqualified leads
+- High-potential practices (Sweet Spot: 3-8 vets) buried in unqualified leads
 - No consistent prioritization criteria (subjective gut feel)
 - No score explanations (why is this practice Hot vs Warm?)
-- No automated lead routing (who should work which leads?)
+- Enrichment data inconsistencies block scoring (when they shouldn't)
+- No way to re-score practices after manual data corrections
 
 ## Goals & Non-Goals
 
 ### Goals
-✅ Calculate 0-120 point ICP fit score based on 4 dimensions + bonus
-✅ Classify practice size: Solo, Small, Sweet Spot, Large, Corporate
-✅ Assign priority tier: Hot (80-120), Warm (50-79), Cold (0-49), Out of Scope
-✅ Generate score breakdown (which factors contributed most)
-✅ Update Notion records with scoring data
-✅ Support score recalculation (re-run after manual data corrections)
+✅ Calculate 0-120 point ICP fit score with 5 dimensions
+✅ Classify practice size: Solo (1), Small (2), Sweet Spot (3-8), Large (9-19), Corporate (20+)
+✅ Assign priority tier: Hot (80-120), Warm (50-79), Cold (0-49), Out of Scope, Pending Enrichment
+✅ Generate score breakdown with confidence flags
+✅ Update Notion records with dual scoring (initial_score + lead_score)
+✅ Auto-trigger scoring after FEAT-002 enrichment
+✅ Support manual rescore via CLI command
+✅ Gracefully handle partial/missing/low-confidence enrichment data
+✅ Score practices with baseline-only data (no enrichment)
+✅ Log errors in Score Breakdown field without blocking
 
 ### Non-Goals
 ❌ Predictive scoring (ML models, conversion probability)
@@ -38,655 +52,729 @@ Without systematic ICP fit scoring:
 ❌ Score decay over time (time-based deprioritization)
 ❌ Manual score overrides (sales reps can't adjust scores)
 ❌ Competitive analysis (nearby practices comparison)
+❌ Blocking enrichment on scoring failures
+❌ Immediate retries on enrichment errors
+❌ Score versioning/history tracking
+❌ Manual score adjustments by sales team
 
 ## User Stories
 
 **As a sales rep**, I need practices ranked by ICP fit so I focus on high-potential leads first.
 
-**As a sales manager**, I need to see why a practice is scored 95 points so I can validate prioritization logic.
+**As a sales manager**, I need to see why a practice is scored 95 points (with confidence flags) so I can validate prioritization logic.
 
-**As a sales rep**, I need to know if a practice is "Sweet Spot" (multi-vet, not too large) so I tailor my pitch.
+**As a sales rep**, I need to know if a practice is "Sweet Spot" (3-8 vets) so I tailor my pitch.
 
-**As a developer**, I need to recalculate scores after manual data corrections without re-scraping.
+**As a developer**, I need to recalculate scores after manual data corrections via CLI command.
 
 **As a business owner**, I need Out of Scope practices flagged so we don't waste time on unfit prospects.
 
-## Technical Specification
+**As a developer**, I need scoring to continue even when enrichment data is incomplete/missing so the pipeline doesn't block.
 
-### Architecture
+## Data Availability Scenarios
 
+### Scenario A: Full Enrichment
+**Condition:** All FEAT-002 fields populated, high confidence on critical fields
+
+**Behavior:**
+- Calculate full 0-120 score using all dimensions
+- No confidence penalty applied (high confidence = 1.0x multiplier)
+- Priority tier assigned based on score
+- Score breakdown shows all components
+
+**Example:**
+```json
+{
+  "vet_count_total": 4,
+  "vet_count_confidence": "high",
+  "emergency_24_7": true,
+  "google_review_count": 234,
+  "boarding_services": true,
+  "online_booking": true,
+  "patient_portal": true,
+  "decision_maker": {"name": "Dr. Smith", "role": "Owner", "email": "smith@example.com"}
+}
 ```
-┌─────────────────────────────────────────────────────────────┐
-│ FEAT-003: ICP Fit Lead Scoring & Prioritization            │
-├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│  1. Query Notion for all practices (enriched)               │
-│     └─ Filter: enrichment_status == "Completed"            │
-│                                                             │
-│  2. LeadScorer.calculate_icp_fit_score()                   │
-│     ├─ Practice Size Score (0-40 pts)                      │
-│     ├─ Call Volume Indicators (0-30 pts)                   │
-│     ├─ Technology Adoption (0-20 pts)                      │
-│     ├─ Baseline Score (0-10 pts)                           │
-│     └─ Decision Maker Bonus (+0-20 pts)                    │
-│                                                             │
-│  3. PracticeClassifier.classify_practice_size()            │
-│     └─ Solo / Small / Sweet Spot / Large / Corporate       │
-│                                                             │
-│  4. PriorityTierAssigner.assign_tier()                     │
-│     └─ Hot / Warm / Cold / Out of Scope                    │
-│                                                             │
-│  5. Update Notion records with scoring data                 │
-│     ├─ Lead Score (0-120)                                  │
-│     ├─ Practice Size Classification                        │
-│     ├─ Priority Tier                                       │
-│     └─ Score Breakdown (JSON explanation)                  │
-│                                                             │
-└─────────────────────────────────────────────────────────────┘
+**Result:** 115 pts (Hot tier), no confidence flags
+
+---
+
+### Scenario B: Partial Enrichment
+**Condition:** Some FEAT-002 fields missing (e.g., no decision maker found), high/medium confidence on available fields
+
+**Behavior:**
+- Calculate score with missing components = 0 pts
+- No penalty for missing data (graceful degradation)
+- Confidence penalty applied if available fields have medium confidence
+- Score breakdown shows which dimensions contributed
+
+**Example:**
+```json
+{
+  "vet_count_total": 5,
+  "vet_count_confidence": "medium",
+  "emergency_24_7": false,
+  "google_review_count": 120,
+  "boarding_services": null,  // Missing
+  "online_booking": true,
+  "patient_portal": false,
+  "decision_maker": null  // Missing
+}
 ```
+**Calculation:**
+- Practice Size: 25 pts (Sweet Spot, medium confidence → 25 × 0.9 = 22.5 pts)
+- Call Volume: 20 pts (100+ reviews)
+- Technology: 10 pts (online booking)
+- Baseline: 6 pts (Google Maps reputation)
+- Decision Maker: 0 pts (missing)
+**Result:** 58.5 pts (Warm tier), confidence flag: "⚠️ Medium Confidence on Vet Count"
 
-### Component Details
+---
 
-#### 1. ICP Fit Scoring Algorithm (lead_scorer.py)
+### Scenario C: Low-Confidence Enrichment
+**Condition:** FEAT-002 completed but vet_count_confidence='low' (scraper uncertain, made best guess)
 
-**Purpose:** Calculate 0-120 point ICP fit score based on enrichment data
+**Behavior:**
+- Calculate score with confidence penalty applied
+- Confidence penalty: high=1.0x, medium=0.9x, low=0.7x
+- Flag with "⚠️ Low Confidence" in Confidence Flags field
+- Score breakdown explains penalty applied
 
-**Scoring Dimensions:**
+**Example:**
+```json
+{
+  "vet_count_total": 3,
+  "vet_count_confidence": "low",  // Website text unclear
+  "emergency_24_7": true,
+  "google_review_count": 200,
+  "decision_maker": {"name": "Dr. Jones", "role": "Owner"}
+}
+```
+**Calculation:**
+- Practice Size: 25 pts × 0.7 = 17.5 pts (low confidence penalty)
+- Call Volume: 30 pts (emergency + 200 reviews)
+- Technology: 0 pts
+- Baseline: 10 pts
+- Decision Maker: 5 pts (name + role only)
+**Result:** 62.5 pts (Warm tier), confidence flag: "⚠️ Low Confidence on Vet Count"
 
-##### **1. Practice Size Score (0-40 points)**
+---
 
-**Vet Count Scoring:**
+### Scenario D: No Enrichment
+**Condition:** Practice has not been enriched yet (FEAT-002 not run or skipped)
+
+**Behavior:**
+- Calculate baseline-only score (max 20 pts: reviews + rating + has_website + multiple_locations)
+- Priority Tier = "Pending Enrichment"
+- Score breakdown shows "Enrichment pending" in Practice Size/Technology dimensions
+- No error logged (this is expected state)
+
+**Example:**
+```json
+{
+  "google_review_count": 150,
+  "google_rating": 4.6,
+  "website_url": "https://example.com",
+  "multiple_locations": true,
+  "enrichment_status": null  // Not enriched
+}
+```
+**Calculation:**
+- Practice Size: N/A (pending enrichment)
+- Call Volume: 10 pts (150 reviews from Google Maps)
+- Technology: N/A (pending enrichment)
+- Baseline: 10 pts (4.6 rating + has website)
+- Decision Maker: N/A (pending enrichment)
+**Result:** 20 pts, Priority Tier = "Pending Enrichment"
+
+---
+
+### Scenario E: Enrichment Failed
+**Condition:** FEAT-002 attempted but failed (timeout, LLM error, website unreachable)
+
+**Behavior:**
+- Treat same as Scenario D (baseline-only scoring)
+- Enrichment Status = "Completed" (preserves FEAT-002 state)
+- Lead Score = null (scoring failed due to missing data)
+- Error logged in Score Breakdown field (JSON structure with error key)
+- No blocking, no retries
+
+**Example:**
+```json
+{
+  "enrichment_status": "Completed",
+  "enrichment_error": "LLM timeout after 45s",
+  "vet_count_total": null,
+  "vet_count_confidence": null
+}
+```
+**Score Breakdown (JSON):**
+```json
+{
+  "total_score": null,
+  "error": "Enrichment failed: LLM timeout after 45s. Scoring with baseline only.",
+  "baseline_score": 15,
+  "priority_tier": "Pending Enrichment"
+}
+```
+**Result:** Lead Score = null, Enrichment Status preserved, error logged
+
+---
+
+## Scoring Algorithm
+
+### 0-120 Point System
+
+#### 1. Practice Size & Complexity (40 points)
+**Updated Sweet Spot Definition: 3-8 vets (broader than previous 3-5)**
+
 ```python
 def score_practice_size(vet_count: int, confidence: str) -> Dict[str, Any]:
     """
     Score based on practice size (vet count).
 
     Sweet Spot: 3-8 vets (multi-vet, not too large)
-    - 3-5 vets: 40 points (ideal size)
-    - 6-8 vets: 35 points (still good)
-    - 9-12 vets: 25 points (getting large)
-    - 13-20 vets: 15 points (corporate-ish)
-    - 20+ vets: 5 points (too large, likely corporate)
-    - 2 vets: 30 points (small multi-vet)
-    - 1 vet: 10 points (solo practice, low fit)
+    - 3-8 vets: 25 points (ideal size - UPDATED)
+    - 2 or 9 vets: 15 points
+    - 10+ vets or 1 vet: 5 points
 
-    Confidence penalty:
-    - Low confidence: -10 points
-    - Medium confidence: -5 points
-    - High confidence: No penalty
+    Confidence penalty (applied after base score):
+    - Low confidence: score × 0.7
+    - Medium confidence: score × 0.9
+    - High confidence: score × 1.0 (no penalty)
     """
     base_score = 0
-    if vet_count >= 20:
-        base_score = 5
-    elif vet_count >= 13:
-        base_score = 15
-    elif vet_count >= 9:
-        base_score = 25
-    elif vet_count >= 6:
-        base_score = 35
-    elif vet_count >= 3:
-        base_score = 40  # Sweet Spot
+
+    if vet_count >= 10:
+        base_score = 5  # Corporate territory
+    elif vet_count == 9:
+        base_score = 15  # Edge of Sweet Spot
+    elif 3 <= vet_count <= 8:
+        base_score = 25  # SWEET SPOT (updated from 3-5)
     elif vet_count == 2:
-        base_score = 30
+        base_score = 15  # Small multi-vet
     else:  # 1 vet
-        base_score = 10
+        base_score = 5  # Solo practice
 
     # Apply confidence penalty
     if confidence == "low":
-        base_score = max(0, base_score - 10)
+        base_score = base_score * 0.7
     elif confidence == "medium":
-        base_score = max(0, base_score - 5)
+        base_score = base_score * 0.9
 
     return {
-        "score": base_score,
+        "score": round(base_score, 1),
         "max": 40,
         "reason": f"{vet_count} vets (confidence: {confidence})"
     }
 ```
 
-**Rationale:**
-- **Sweet Spot (3-8 vets):** Large enough to benefit from product, small enough to be approachable
-- **Solo (1 vet):** Low priority (less call volume, budget constraints)
-- **Corporate (20+ vets):** Complex decision-making, longer sales cycles
+**Emergency Services Bonus:**
+- 24/7 Emergency: +15 points (high call volume)
 
-##### **2. Call Volume Indicators (0-30 points)**
+---
 
-**High Call Volume Signals:**
+#### 2. Call Volume Indicators (40 points)
+**Updated to include Multiple Locations**
+
 ```python
 def score_call_volume_indicators(practice: VeterinaryPractice) -> Dict[str, Any]:
     """
     Score based on indicators of high call volume.
 
     Indicators:
-    - 24/7 Emergency Services: 15 points (high call volume)
-    - High review count (150+): 10 points (busy practice)
-    - Boarding services: 5 points (additional call drivers)
+    - 100+ Google reviews: 20 points (busy practice)
+    - 50-99 reviews: 12 points
+    - 20-49 reviews: 5 points
+    - Multiple locations: +10 points (ADDED per user decision)
+    - High boarding/specialty services: +10 points
 
-    Max: 30 points
+    Max: 40 points
     """
     score = 0
     reasons = []
 
-    if practice.emergency_24_7:
-        score += 15
-        reasons.append("24/7 emergency services (15 pts)")
-
-    if practice.google_review_count >= 150:
-        score += 10
-        reasons.append(f"{practice.google_review_count} reviews (10 pts)")
-
-    if practice.boarding_services:
+    # Review count (proxy for call volume)
+    if practice.google_review_count >= 100:
+        score += 20
+        reasons.append(f"{practice.google_review_count} reviews (20 pts)")
+    elif practice.google_review_count >= 50:
+        score += 12
+        reasons.append(f"{practice.google_review_count} reviews (12 pts)")
+    elif practice.google_review_count >= 20:
         score += 5
-        reasons.append("Boarding services (5 pts)")
+        reasons.append(f"{practice.google_review_count} reviews (5 pts)")
+
+    # Multiple locations (call volume indicator)
+    if practice.multiple_locations:
+        score += 10
+        reasons.append("Multiple locations (10 pts)")
+
+    # Boarding/specialty services
+    if practice.boarding_services or practice.specialty_services:
+        score += 10
+        reasons.append("Boarding/specialty services (10 pts)")
 
     return {
-        "score": score,
-        "max": 30,
-        "reason": ", ".join(reasons) if reasons else "No high call volume indicators"
+        "score": min(score, 40),  # Cap at 40
+        "max": 40,
+        "reason": ", ".join(reasons) if reasons else "No call volume indicators"
     }
 ```
 
-**Rationale:**
-- **24/7 Emergency:** Highest call volume, most pain with missed calls
-- **High reviews:** Proxy for busy practice (more patients = more calls)
-- **Boarding:** Additional call drivers beyond medical appointments
+---
 
-##### **3. Technology Adoption Score (0-20 points)**
+#### 3. Technology Sophistication (20 points)
 
-**Tech Readiness Signals:**
 ```python
 def score_technology_adoption(practice: VeterinaryPractice) -> Dict[str, Any]:
     """
     Score based on technology adoption (readiness for product).
 
     Indicators:
-    - Online booking: 8 points (tech-forward)
-    - Patient portal: 7 points (tech-forward)
-    - Telemedicine: 5 points (innovative)
-    - Digital records mentioned: 3 points (basic tech)
+    - Online booking: 10 points (tech-forward)
+    - Patient portal OR telemedicine: 5 points
+    - Digital records mentioned: 5 points
 
-    Max: 20 points (cap at 20 even if sum exceeds)
+    Max: 20 points
     """
     score = 0
     reasons = []
 
     if practice.online_booking:
-        score += 8
-        reasons.append("Online booking (8 pts)")
+        score += 10
+        reasons.append("Online booking (10 pts)")
 
-    if practice.patient_portal:
-        score += 7
-        reasons.append("Patient portal (7 pts)")
-
-    if practice.telemedicine:
+    if practice.patient_portal or practice.telemedicine:
         score += 5
-        reasons.append("Telemedicine (5 pts)")
+        reasons.append("Patient portal/telemedicine (5 pts)")
 
     if practice.digital_records_mentioned:
-        score += 3
-        reasons.append("Digital records (3 pts)")
-
-    # Cap at 20 points
-    score = min(score, 20)
+        score += 5
+        reasons.append("Digital records (5 pts)")
 
     return {
-        "score": score,
+        "score": min(score, 20),
         "max": 20,
         "reason": ", ".join(reasons) if reasons else "No technology indicators"
     }
 ```
 
-**Rationale:**
-- **Online booking/portals:** Tech-forward practices, easier adoption
-- **Telemedicine:** Innovative, open to new tech
-- **Digital records:** Baseline tech adoption
+---
 
-##### **4. Baseline Score (0-10 points)**
+#### 4. Baseline Quality (10 points - Recalculated from Google Maps)
 
-**From FEAT-001 Initial Scoring:**
+**Note:** This recalculates baseline from Google Maps data, aware of initial_scorer.py logic.
+
 ```python
 def score_baseline(practice: VeterinaryPractice) -> Dict[str, Any]:
     """
-    Normalize FEAT-001 initial score (0-25) to 0-10 range.
+    Recalculate baseline from Google Maps data (not reusing initial_score).
 
-    FEAT-001 scoring:
-    - Review count: 0-15 pts
-    - Review rating: 0-10 pts
-    - Total: 0-25 pts
+    Components:
+    - Rating 4.5+: 6 points
+    - Rating 4.0-4.4: 4 points
+    - Rating 3.5-3.9: 2 points
+    - Has website: +4 points
 
-    Normalize to 0-10:
-    - 0-6 pts → 0 pts (very low)
-    - 7-12 pts → 3 pts (low)
-    - 13-18 pts → 6 pts (medium)
-    - 19-25 pts → 10 pts (high)
+    Max: 10 points
     """
-    initial_score = practice.lead_score  # From FEAT-001
+    score = 0
+    reasons = []
 
-    if initial_score >= 19:
-        normalized = 10
-    elif initial_score >= 13:
-        normalized = 6
-    elif initial_score >= 7:
-        normalized = 3
-    else:
-        normalized = 0
+    # Rating score
+    if practice.google_rating >= 4.5:
+        score += 6
+        reasons.append(f"{practice.google_rating}★ rating (6 pts)")
+    elif practice.google_rating >= 4.0:
+        score += 4
+        reasons.append(f"{practice.google_rating}★ rating (4 pts)")
+    elif practice.google_rating >= 3.5:
+        score += 2
+        reasons.append(f"{practice.google_rating}★ rating (2 pts)")
+
+    # Has website
+    if practice.website_url:
+        score += 4
+        reasons.append("Has website (4 pts)")
 
     return {
-        "score": normalized,
+        "score": score,
         "max": 10,
-        "reason": f"Google Maps reputation ({initial_score}/25 initial score)"
+        "reason": ", ".join(reasons) if reasons else "Low baseline quality"
     }
 ```
 
-**Rationale:**
-- Carries forward Google Maps reputation score from FEAT-001
-- Normalized to 0-10 to fit overall 120-point scale
+---
 
-##### **5. Decision Maker Bonus (0-20 points)**
+#### 5. Decision Maker Bonus (+10 points)
 
-**Bonus for Decision Maker Availability:**
 ```python
 def score_decision_maker_bonus(practice: VeterinaryPractice) -> Dict[str, Any]:
     """
     Bonus points for having decision maker information.
 
     Scoring:
-    - Name + Email + Role: 20 points (full contact info)
-    - Name + Email: 15 points (can reach directly)
-    - Name + Role: 10 points (can research email)
-    - Name only: 5 points (partial info)
-    - No decision maker: 0 points
+    - Owner/PM name + email: +10 points (can reach directly)
+    - Owner/PM name only: +5 points (can research email)
+    - Generic contact only: 0 points
 
-    Max: 20 points (bonus, doesn't count toward 120 base)
+    Max: 10 points
     """
     dm = practice.decision_maker
     if not dm or not dm.name:
-        return {"score": 0, "max": 20, "reason": "No decision maker info"}
+        return {"score": 0, "max": 10, "reason": "No decision maker info"}
 
     score = 0
     reasons = []
 
-    if dm.name and dm.email and dm.role:
-        score = 20
-        reasons.append(f"{dm.role} with email")
-    elif dm.name and dm.email:
-        score = 15
-        reasons.append("Name and email")
-    elif dm.name and dm.role:
+    if dm.name and dm.email:
         score = 10
-        reasons.append(f"{dm.role} identified")
-    else:
+        reasons.append(f"{dm.role or 'Contact'} with email (10 pts)")
+    elif dm.name:
         score = 5
-        reasons.append("Name only")
+        reasons.append(f"{dm.role or 'Contact'} name only (5 pts)")
 
     return {
         "score": score,
-        "max": 20,
+        "max": 10,
         "reason": ", ".join(reasons)
     }
 ```
 
-**Rationale:**
-- Direct contact info dramatically increases conversion likelihood
-- Easier to personalize outreach with role/name
+---
 
-##### **Total ICP Fit Score: 0-120 points**
+### Confidence Penalty (Applied After Calculation)
 
 ```python
-class LeadScorer:
-    def calculate_icp_fit_score(self, practice: VeterinaryPractice) -> LeadScore:
-        """
-        Calculate comprehensive ICP fit score.
+CONFIDENCE_MULTIPLIERS = {
+    "high": 1.0,    # No penalty
+    "medium": 0.9,  # 10% penalty
+    "low": 0.7      # 30% penalty
+}
 
-        Returns:
-            LeadScore object with total score (0-120) and breakdown
-        """
-        practice_size = self.score_practice_size(practice.vet_count_total, practice.vet_count_confidence)
-        call_volume = self.score_call_volume_indicators(practice)
-        technology = self.score_technology_adoption(practice)
-        baseline = self.score_baseline(practice)
-        decision_maker = self.score_decision_maker_bonus(practice)
-
-        total_score = (
-            practice_size["score"] +
-            call_volume["score"] +
-            technology["score"] +
-            baseline["score"] +
-            decision_maker["score"]
-        )
-
-        return LeadScore(
-            total_score=total_score,
-            max_score=120,
-            practice_size_score=practice_size,
-            call_volume_score=call_volume,
-            technology_score=technology,
-            baseline_score=baseline,
-            decision_maker_bonus=decision_maker
-        )
+# Applied to practice_size_score only (most critical field)
+final_practice_size_score = base_practice_size_score * CONFIDENCE_MULTIPLIERS[confidence]
 ```
 
-**Score Distribution:**
+---
+
+### Priority Tiers
+
 ```python
-# Example: Boston Veterinary Clinic
-# - 4 vets (high confidence): 40 pts
-# - 24/7 emergency + 234 reviews + boarding: 30 pts
-# - Online booking + patient portal: 15 pts
-# - Strong Google reputation: 10 pts
-# - Owner name + email: 20 pts
-# Total: 115 pts (Hot tier)
+def assign_tier(total_score: int, enrichment_status: str) -> str:
+    """
+    Assign priority tier based on ICP fit score.
+
+    Tiers:
+    - Hot (80-120 pts): 🔥 3-8 vets + decision maker + high volume
+    - Warm (50-79 pts): 🌡️ Good signals, some unknowns
+    - Cold (0-49 pts): ❄️ Weak signals, needs research
+    - Out of Scope: ⛔ Solo (1 vet) OR Corporate (10+ vets) with <20 pts
+    - Pending Enrichment: ⏳ Not yet enriched (baseline only)
+    """
+    if enrichment_status != "Completed":
+        return "Pending Enrichment"
+
+    if total_score >= 80:
+        return "Hot"
+    elif total_score >= 50:
+        return "Warm"
+    elif total_score >= 20:
+        return "Cold"
+    else:
+        return "Out of Scope"
 ```
 
-**Dependencies:**
-- `FEAT-000` VeterinaryPractice model
-- `FEAT-000` LeadScore model
+---
 
-**Uncertainty:**
-- ❓ Should scoring weights be configurable in config.json? (Recommendation: Yes, add ScoringConfig)
-- ❓ Should we support custom scoring formulas? (Recommendation: Phase 2)
+## State Machine
 
-#### 2. Practice Size Classification (practice_classifier.py)
+```
+┌─────────────────────────────────────────────────────────────┐
+│ LEAD SCORING STATE MACHINE                                  │
+└─────────────────────────────────────────────────────────────┘
 
-**Purpose:** Classify practices into size categories based on vet count
+[Practice Created]
+        ↓
+[Google Maps Scraped] (FEAT-001)
+        ↓
+    initial_score calculated (0-25)
+        ↓
+        ├─→ [Enrichment Skipped] → Baseline-Only Scoring (Scenario D)
+        │                              ↓
+        │                          Priority = "Pending Enrichment"
+        │
+        └─→ [Enrichment Started] (FEAT-002)
+                ↓
+                ├─→ [Enrichment Succeeded] → Full Scoring (Scenario A/B/C)
+                │       ↓                        ↓
+                │   Auto-trigger FEAT-003     lead_score calculated (0-120)
+                │       ↓                        ↓
+                │   Calculate with full/partial data
+                │       ↓
+                │   Confidence penalty applied (if low/medium)
+                │       ↓
+                │   Priority tier assigned
+                │       ↓
+                │   [Scoring Complete]
+                │
+                └─→ [Enrichment Failed] → Baseline-Only Scoring (Scenario E)
+                        ↓
+                    Auto-trigger FEAT-003
+                        ↓
+                    lead_score = null
+                        ↓
+                    Error logged in Score Breakdown
+                        ↓
+                    Enrichment Status preserved
+                        ↓
+                    [Scoring Complete (with error)]
 
-**Classification Logic:**
+[Manual Rescore Triggered]
+        ↓
+    Re-read practice data from Notion
+        ↓
+    Recalculate lead_score
+        ↓
+    Update Notion with new score
+        ↓
+    [Scoring Complete]
+```
+
+---
+
+## Integration with FEAT-002
+
+### Auto-Trigger Architecture
+
 ```python
-class PracticeClassifier:
-    def classify_practice_size(self, vet_count: int) -> str:
-        """
-        Classify practice by size.
+# In FEAT-002 enrichment flow:
+async def enrich_practice(practice_id: str) -> None:
+    """
+    Enrich practice and auto-trigger scoring.
+    """
+    try:
+        # Enrich practice
+        enriched_data = await website_enricher.enrich(practice_id)
+        await notion_client.update_enrichment(practice_id, enriched_data)
 
-        Categories:
-        - Solo: 1 vet
-        - Small: 2 vets
-        - Sweet Spot: 3-8 vets (ideal for product)
-        - Large: 9-19 vets
-        - Corporate: 20+ vets
+        # Auto-trigger FEAT-003 scoring (with timeout)
+        try:
+            await asyncio.wait_for(
+                score_practice(practice_id),
+                timeout=5.0  # 5 second timeout per practice
+            )
+        except asyncio.TimeoutError:
+            logger.warning(f"Scoring timeout for {practice_id}")
+            # Log error in Score Breakdown, don't block enrichment
+            await notion_client.update_score_breakdown(
+                practice_id,
+                {"error": "Scoring timeout after 5s", "total_score": null}
+            )
+        except Exception as e:
+            logger.error(f"Scoring failed for {practice_id}: {e}")
+            # Log error, don't block enrichment
+            await notion_client.update_score_breakdown(
+                practice_id,
+                {"error": f"Scoring error: {str(e)}", "total_score": null}
+            )
 
-        Args:
-            vet_count: Number of veterinarians
-
-        Returns:
-            Classification string
-        """
-        if vet_count >= 20:
-            return "Corporate"
-        elif vet_count >= 9:
-            return "Large"
-        elif vet_count >= 3:
-            return "Sweet Spot"
-        elif vet_count == 2:
-            return "Small"
-        else:
-            return "Solo"
+    except Exception as e:
+        logger.error(f"Enrichment failed for {practice_id}: {e}")
+        # Still try to score with baseline data
+        try:
+            await score_practice(practice_id)  # Scenario E
+        except Exception as score_error:
+            logger.error(f"Baseline scoring also failed: {score_error}")
 ```
 
-**Classification Distribution (Expected):**
-```python
-# Of 150 MA practices:
-# Solo: ~30 (20%)
-# Small: ~25 (17%)
-# Sweet Spot: ~70 (47%)  ← Primary target
-# Large: ~20 (13%)
-# Corporate: ~5 (3%)
+### Error Handling in Integration
+
+**Timeout Behavior:**
+- Scoring has 5 second timeout per practice
+- If timeout exceeded, log error in Score Breakdown
+- Lead Score = null
+- Enrichment Status = "Completed" (preserved)
+- No retry, no blocking
+
+**Enrichment Failure Behavior:**
+- FEAT-002 marks Enrichment Status = "Completed" (even if failed)
+- FEAT-003 auto-triggered
+- Scores with baseline-only data (Scenario E)
+- Lead Score = null
+- Error logged in Score Breakdown
+
+**Notion State After Errors:**
+```json
+{
+  "enrichment_status": "Completed",
+  "enrichment_error": "LLM timeout after 45s",
+  "lead_score": null,
+  "score_breakdown": {
+    "error": "Enrichment failed, scoring with baseline only",
+    "baseline_score": 15,
+    "priority_tier": "Pending Enrichment"
+  }
+}
 ```
 
-**Dependencies:**
-- `FEAT-000` VeterinaryPractice model
+### Performance Requirements
 
-**Uncertainty:**
-- ❓ Should classification thresholds be configurable? (Recommendation: Yes, in ScoringConfig)
+- **Typical latency:** <100ms per practice (pure calculation)
+- **Timeout:** 5000ms (5 seconds) per practice
+- **Batch processing:** 150 practices in <30 seconds (parallel execution)
 
-#### 3. Priority Tier Assignment (priority_tier_assigner.py)
+---
 
-**Purpose:** Assign priority tier based on total ICP fit score
+## Manual Rescore Command
 
-**Tier Logic:**
-```python
-class PriorityTierAssigner:
-    def assign_tier(self, total_score: int, practice_size: str) -> str:
-        """
-        Assign priority tier based on ICP fit score.
+### CLI Usage
 
-        Tiers:
-        - Hot: 80-120 pts (high-priority, contact ASAP)
-        - Warm: 50-79 pts (qualified, contact within week)
-        - Cold: 20-49 pts (low-priority, contact if time)
-        - Out of Scope: 0-19 pts (unqualified, skip)
+```bash
+# Rescore all practices
+python src/scoring/rescore_leads.py --all
 
-        Special rule: Solo practices (<20 pts) → Out of Scope
-        """
-        if total_score >= 80:
-            return "Hot"
-        elif total_score >= 50:
-            return "Warm"
-        elif total_score >= 20:
-            return "Cold"
-        else:
-            return "Out of Scope"
+# Rescore specific practice
+python src/scoring/rescore_leads.py --practice-id abc123
+
+# Rescore by filter
+python src/scoring/rescore_leads.py --tier "Hot"
+python src/scoring/rescore_leads.py --enrichment-status "Completed"
+
+# Dry run (show what would be rescored)
+python src/scoring/rescore_leads.py --all --dry-run
 ```
 
-**Tier Distribution (Expected):**
-```python
-# Of 150 MA practices:
-# Hot: ~35 (23%)       ← Focus here first
-# Warm: ~55 (37%)      ← Contact within week
-# Cold: ~40 (27%)      ← Low priority
-# Out of Scope: ~20 (13%)  ← Skip
+### Behavior with Unenriched Practices
+
+**If practice not enriched:**
+- Calculate baseline-only score (Scenario D)
+- Priority Tier = "Pending Enrichment"
+- No error logged (expected state)
+
+**If practice enrichment failed:**
+- Calculate baseline-only score (Scenario E)
+- Lead Score = null
+- Error logged in Score Breakdown
+
+**If practice manually corrected:**
+- Re-read latest data from Notion
+- Recalculate full score
+- Update Notion with new lead_score
+- Preserve enrichment_status and enrichment_error (don't overwrite)
+
+---
+
+## Dual Scoring System
+
+### Why Both initial_score and lead_score?
+
+**initial_score (FEAT-001):**
+- **Purpose:** Quick triage during Google Maps scraping
+- **Range:** 0-25 points
+- **Dimensions:** Google reviews + rating
+- **Usage:** Identify practices worth enriching
+- **When:** Calculated immediately after Google Maps scrape
+- **Preserved:** Never overwritten, historical record
+
+**lead_score (FEAT-003):**
+- **Purpose:** Comprehensive ICP fit after enrichment
+- **Range:** 0-120 points
+- **Dimensions:** Practice size, call volume, technology, baseline, decision maker
+- **Usage:** Prioritize sales outreach
+- **When:** Calculated after enrichment (auto-trigger or manual rescore)
+- **Updated:** Recalculated on manual rescore
+
+### How They Coexist in Notion
+
+**Notion Schema:**
+```
+Practice Table:
+  - Initial Score (number, 0-25)         ← FEAT-001, never changes
+  - Lead Score (number, 0-120)           ← FEAT-003, recalculated on rescore
+  - Priority Tier (select)               ← Based on lead_score
+  - Score Breakdown (rich_text, JSON)    ← Explains lead_score components
 ```
 
-**Dependencies:**
-- `FEAT-000` VeterinaryPractice model
-
-**Uncertainty:**
-- ❓ Should tier thresholds be configurable? (Recommendation: Yes, in ScoringConfig)
-- ❓ Should we support manual tier overrides? (Recommendation: Phase 2)
-
-#### 4. Score Breakdown Generator (score_breakdown.py)
-
-**Purpose:** Generate human-readable score explanation for sales context
-
-**Output Format:**
-```python
-class ScoreBreakdown(BaseModel):
-    """JSON structure stored in Notion 'Score Breakdown' field."""
-
-    total_score: int
-    max_score: int
-    practice_size_classification: str
-    priority_tier: str
-
-    breakdown: Dict[str, Dict[str, Any]]
-    # Example:
-    # {
-    #   "practice_size": {"score": 40, "max": 40, "reason": "4 vets (confidence: high)"},
-    #   "call_volume": {"score": 30, "max": 30, "reason": "24/7 emergency, 234 reviews, boarding"},
-    #   "technology": {"score": 15, "max": 20, "reason": "Online booking, patient portal"},
-    #   "baseline": {"score": 10, "max": 10, "reason": "Strong Google reputation"},
-    #   "decision_maker": {"score": 20, "max": 20, "reason": "Owner with email"}
-    # }
-
-    top_fit_reasons: List[str]
-    # Example: ["Sweet Spot practice (4 vets)", "24/7 emergency services", "Owner email available"]
-
-    concerns: List[str]
-    # Example: ["No online booking", "Low vet count confidence"]
+**Example Record:**
+```json
+{
+  "practice_name": "Boston Vet Clinic",
+  "initial_score": 23,           // From FEAT-001 (strong Google reputation)
+  "lead_score": 115,              // From FEAT-003 (full enrichment)
+  "priority_tier": "Hot",
+  "score_breakdown": {
+    "total_score": 115,
+    "practice_size": {"score": 25, "reason": "4 vets (confidence: high)"},
+    "call_volume": {"score": 30, "reason": "234 reviews, multiple locations"},
+    "technology": {"score": 10, "reason": "Online booking"},
+    "baseline": {"score": 10, "reason": "4.8★ rating, has website"},
+    "decision_maker": {"score": 10, "reason": "Owner with email"}
+  }
+}
 ```
 
-**Usage in Sales Context:**
-```python
-# Notion record shows:
-# Lead Score: 115
-# Priority Tier: Hot
-# Score Breakdown: (expandable JSON)
-#   Practice Size: 40/40 - 4 vets (confidence: high)
-#   Call Volume: 30/30 - 24/7 emergency, 234 reviews, boarding
-#   Technology: 15/20 - Online booking, patient portal
-#   Baseline: 10/10 - Strong Google reputation
-#   Decision Maker: 20/20 - Owner with email
-#
-# Top Fit Reasons:
-#   1. Sweet Spot practice (4 vets)
-#   2. 24/7 emergency services (high call volume)
-#   3. Owner email available for direct outreach
-#
-# Concerns: None
-```
+---
 
-**Dependencies:**
-- `FEAT-000` LeadScore model
-
-**Uncertainty:**
-- ❓ Should we generate personalized email snippets? (Recommendation: Phase 2)
-
-#### 5. Notion Scoring Update (extends NotionClient)
-
-**Purpose:** Update Notion records with scoring data
-
-**New Method:**
-```python
-class NotionClient:
-    def update_practice_scoring(
-        self,
-        page_id: str,
-        lead_score: LeadScore,
-        practice_size: str,
-        priority_tier: str,
-        score_breakdown: ScoreBreakdown
-    ) -> None:
-        """
-        Update existing Notion record with scoring data.
-
-        Preserves:
-        - All sales workflow fields (Status, Assigned To, etc.)
-        - Core data from FEAT-001 (Practice Name, Address, etc.)
-        - Enrichment data from FEAT-002 (Vet count, decision maker, etc.)
-
-        Updates:
-        - Lead Score (0-120)
-        - Practice Size Classification
-        - Priority Tier
-        - Score Breakdown (JSON)
-        - Last Scored Date
-        """
-```
-
-**Field Mappings (LeadScore → Notion):**
-
-| Scoring Field | Notion Property | Type |
-|--------------|----------------|------|
-| `total_score` | "Lead Score" | number |
-| `practice_size_classification` | "Practice Size" | select |
-| `priority_tier` | "Priority Tier" | select |
-| `score_breakdown` (JSON) | "Score Breakdown" | rich_text (JSON string) |
-| `datetime.now()` | "Last Scored Date" | date |
-
-**Preserved Fields (Never Overwrite):**
-```python
-PRESERVE_FIELDS = [
-    "Status",
-    "Assigned To",
-    "Research Notes",
-    "Call Notes",
-    "Last Contact Date",
-    "Next Follow-Up Date",
-    "Campaign",
-    "Practice Name",           # From FEAT-001
-    "Address",                 # From FEAT-001
-    "Confirmed Vet Count",     # From FEAT-002
-    "Decision Maker Name",     # From FEAT-002
-    "24/7 Emergency Services", # From FEAT-002
-    # ... all enrichment fields
-]
-```
-
-**Dependencies:**
-- `FEAT-000` NotionClient base class
-- `FEAT-000` LeadScore, ScoreBreakdown models
-- `notion-client==2.2.1`
-
-### Data Flow
-
-```
-1. Query Notion for Enriched Practices
-   notion_client = NotionClient(config.notion)
-   practices = notion_client.query_enriched_practices()
-   # Returns 150 practices (enrichment_status == "Completed")
-
-2. Calculate ICP Fit Scores
-   lead_scorer = LeadScorer(config.scoring)
-   scored_practices = []
-   for practice in practices:
-       lead_score = lead_scorer.calculate_icp_fit_score(practice)
-       practice_size = practice_classifier.classify_practice_size(practice.vet_count_total)
-       priority_tier = priority_tier_assigner.assign_tier(lead_score.total_score, practice_size)
-       score_breakdown = generate_score_breakdown(lead_score, practice_size, priority_tier)
-       scored_practices.append({
-           "practice": practice,
-           "lead_score": lead_score,
-           "practice_size": practice_size,
-           "priority_tier": priority_tier,
-           "score_breakdown": score_breakdown
-       })
-   # Total time: 150 × 0.001s = 0.15 seconds (pure calculation)
-
-3. Update Notion Records
-   for scored in scored_practices:
-       notion_client.update_practice_scoring(
-           page_id=scored["practice"].notion_page_id,
-           lead_score=scored["lead_score"],
-           practice_size=scored["practice_size"],
-           priority_tier=scored["priority_tier"],
-           score_breakdown=scored["score_breakdown"]
-       )
-   # Total time: 150 × 0.35s (rate limit) = 52.5s
-
-4. Generate Scoring Summary Report
-   report = generate_scoring_report(scored_practices)
-   logger.info(f"Scoring complete:\n{report}")
-   # Example:
-   # Hot: 35 (23%)
-   # Warm: 55 (37%)
-   # Cold: 40 (27%)
-   # Out of Scope: 20 (13%)
-   # Average score: 62.3
-   # Top practice: Boston Vet Clinic (115 pts)
-
-5. Total Pipeline Time: 0.15s (scoring) + 52.5s (Notion) = 52.65 seconds
-```
-
-### Configuration
+## Configuration
 
 **config.json additions:**
 ```json
 {
   "scoring": {
+    "auto_trigger": true,          // Auto-trigger after FEAT-002 enrichment
+    "timeout_seconds": 5,          // Timeout per practice
+
+    "confidence_penalties": {
+      "high": 1.0,
+      "medium": 0.9,
+      "low": 0.7
+    },
+
     "practice_size": {
-      "sweet_spot_min": 3,
-      "sweet_spot_max": 8,
-      "corporate_threshold": 20,
-      "confidence_penalty_low": 10,
-      "confidence_penalty_medium": 5
+      "sweet_spot_min": 3,         // Updated from 3
+      "sweet_spot_max": 8,         // Updated from 5
+      "sweet_spot_points": 25,
+      "small_multivet_points": 15,
+      "solo_points": 5,
+      "corporate_threshold": 10,
+      "emergency_bonus": 15
     },
+
     "call_volume": {
-      "emergency_24_7_points": 15,
-      "high_review_threshold": 150,
-      "high_review_points": 10,
-      "boarding_points": 5
+      "review_high_threshold": 100,
+      "review_high_points": 20,
+      "review_medium_threshold": 50,
+      "review_medium_points": 12,
+      "review_low_threshold": 20,
+      "review_low_points": 5,
+      "multiple_locations_points": 10,    // ADDED
+      "boarding_specialty_points": 10
     },
+
     "technology": {
-      "online_booking_points": 8,
-      "patient_portal_points": 7,
-      "telemedicine_points": 5,
-      "digital_records_points": 3,
+      "online_booking_points": 10,
+      "portal_telemedicine_points": 5,
+      "digital_records_points": 5,
       "max_tech_score": 20
     },
+
+    "baseline": {
+      "rating_high_threshold": 4.5,
+      "rating_high_points": 6,
+      "rating_medium_threshold": 4.0,
+      "rating_medium_points": 4,
+      "rating_low_threshold": 3.5,
+      "rating_low_points": 2,
+      "has_website_points": 4
+    },
+
     "decision_maker": {
-      "full_contact_points": 20,
-      "name_email_points": 15,
-      "name_role_points": 10,
+      "name_email_points": 10,
       "name_only_points": 5
     },
+
     "tiers": {
       "hot_threshold": 80,
       "warm_threshold": 50,
@@ -696,70 +784,195 @@ PRESERVE_FIELDS = [
 }
 ```
 
-### Testing Strategy
+---
 
-**Unit Tests:**
-- ✅ LeadScorer calculates correct scores for edge cases (solo, corporate, sweet spot)
-- ✅ PracticeClassifier classifies all size categories correctly
-- ✅ PriorityTierAssigner assigns tiers correctly
-- ✅ ScoreBreakdown generates valid JSON
-- ✅ NotionClient updates scoring fields correctly
+## Error Handling
 
-**Integration Tests:**
-- ✅ Full pipeline: Query → Score → Update Notion (test mode, 10 practices)
-- ✅ Score recalculation: Update practice data, re-score, verify new scores
+### Error Categories
 
-**Mock Data:**
-```python
-# tests/fixtures/scoring_samples.py
-SWEET_SPOT_PRACTICE = {
-    "vet_count_total": 4,
-    "vet_count_confidence": "high",
-    "emergency_24_7": True,
-    "google_review_count": 234,
-    "boarding_services": True,
-    "online_booking": True,
-    "patient_portal": True,
-    "decision_maker": {"name": "Dr. Smith", "role": "Owner", "email": "smith@example.com"},
-    "lead_score": 23  # From FEAT-001
+**1. Enrichment Data Missing (Scenario D)**
+- **Cause:** Practice not enriched yet
+- **Recovery:** Score with baseline-only data
+- **Notion State:** lead_score = calculated baseline, priority = "Pending Enrichment"
+- **Log:** Info level, no error
+
+**2. Enrichment Failed (Scenario E)**
+- **Cause:** FEAT-002 timeout, LLM error, website unreachable
+- **Recovery:** Score with baseline-only data
+- **Notion State:** lead_score = null, error logged in Score Breakdown
+- **Log:** Error level with full context
+
+**3. Scoring Timeout**
+- **Cause:** Scoring takes >5 seconds
+- **Recovery:** Log error, set lead_score = null
+- **Notion State:** Enrichment Status preserved, error logged
+- **Log:** Warning level
+
+**4. Notion API Failure**
+- **Cause:** Network error, rate limit, invalid page ID
+- **Recovery:** Retry with exponential backoff (3 attempts)
+- **Notion State:** No update (preserves previous state)
+- **Log:** Error level with retry count
+
+**5. Invalid Data**
+- **Cause:** vet_count = null but vet_count_confidence = "high"
+- **Recovery:** Treat as missing data (Scenario D)
+- **Notion State:** lead_score = baseline only
+- **Log:** Warning level with data inconsistency details
+
+### Error Log Format (Score Breakdown Field)
+
+```json
+{
+  "total_score": null,
+  "error": "Enrichment failed: LLM timeout after 45s",
+  "error_type": "EnrichmentFailed",
+  "timestamp": "2025-11-04T15:30:00Z",
+  "baseline_score": 15,
+  "priority_tier": "Pending Enrichment",
+  "retry_count": 0
 }
-# Expected: 40 + 30 + 15 + 10 + 20 = 115 pts (Hot)
-
-SOLO_PRACTICE = {
-    "vet_count_total": 1,
-    "vet_count_confidence": "high",
-    "emergency_24_7": False,
-    "google_review_count": 45,
-    "boarding_services": False,
-    "online_booking": False,
-    "patient_portal": False,
-    "decision_maker": None,
-    "lead_score": 10  # From FEAT-001
-}
-# Expected: 10 + 5 + 0 + 3 + 0 = 18 pts (Out of Scope)
 ```
 
-**Manual Testing Checklist:**
-1. Run scoring on all practices, verify tiers match expectations
-2. Check Notion records for correct field updates
-3. Verify score breakdown JSON is valid and readable
-4. Test score recalculation (change vet count, re-score)
-5. Verify sales workflow fields not overwritten
+---
 
-### Acceptance Criteria
+## Testing Strategy
 
-1. ✅ 150 practices scored within 60 seconds
-2. ✅ ICP fit scores accurate (0-120 range)
-3. ✅ Practice size classifications correct (Solo/Small/Sweet Spot/Large/Corporate)
-4. ✅ Priority tiers assigned correctly (Hot/Warm/Cold/Out of Scope)
-5. ✅ Score breakdown JSON valid and human-readable
-6. ✅ Notion records updated with scoring data
-7. ✅ Sales workflow fields preserved (Status, Assigned To, etc.)
-8. ✅ Scoring summary report generated (tier distribution, avg score)
-9. ✅ Score recalculation works (re-run after data changes)
-10. ✅ Cost: $0 (pure calculation, no API calls)
+### Unit Tests
 
-### Dependencies
+**test_lead_scorer.py:**
+- ✅ Scenario A: Full enrichment scoring (all fields, high confidence)
+- ✅ Scenario B: Partial enrichment scoring (missing decision maker, medium confidence)
+- ✅ Scenario C: Low confidence penalty application (vet_count_confidence='low')
+- ✅ Scenario D: Baseline-only scoring (no enrichment data)
+- ✅ Scenario E: Enrichment failed scoring (error logged, baseline only)
+- ✅ Sweet spot detection (3-8 vets, not 3-5)
+- ✅ Multiple locations bonus (+10 pts)
+- ✅ Confidence multipliers (high=1.0x, medium=0.9x, low=0.7x)
+- ✅ Edge cases: solo (1 vet), corporate (10+ vets)
+
+**test_practice_classifier.py:**
+- ✅ All size categories: Solo, Small, Sweet Spot, Large, Corporate
+- ✅ Sweet spot range: 3-8 vets (not 3-5)
+
+**test_priority_tier_assigner.py:**
+- ✅ All tiers: Hot, Warm, Cold, Out of Scope, Pending Enrichment
+- ✅ Enrichment status handling
+
+**test_score_breakdown.py:**
+- ✅ Valid JSON generation
+- ✅ Confidence flags included
+- ✅ Error logging format
+
+### Integration Tests
+
+**test_scoring_pipeline.py:**
+- ✅ Auto-trigger after FEAT-002 enrichment
+- ✅ Manual rescore command
+- ✅ Timeout handling (5 second limit)
+- ✅ Error state preservation in Notion
+- ✅ Dual scoring (initial_score + lead_score) coexistence
+
+**test_notion_integration.py:**
+- ✅ Update lead_score without overwriting initial_score
+- ✅ Preserve enrichment_status on scoring errors
+- ✅ Score breakdown JSON serialization
+
+### Mock Data
+
+**tests/fixtures/scoring_samples.py:**
+```python
+# Scenario A: Full enrichment
+FULL_ENRICHMENT = {
+    "vet_count_total": 5,
+    "vet_count_confidence": "high",
+    "emergency_24_7": True,
+    "google_review_count": 200,
+    "multiple_locations": True,
+    "boarding_services": True,
+    "online_booking": True,
+    "patient_portal": False,
+    "decision_maker": {"name": "Dr. Smith", "email": "smith@example.com"},
+    "google_rating": 4.7,
+    "website_url": "https://example.com"
+}
+# Expected: 25 + 30 + 10 + 10 + 10 = 85 pts (Hot)
+
+# Scenario B: Partial enrichment
+PARTIAL_ENRICHMENT = {
+    "vet_count_total": 4,
+    "vet_count_confidence": "medium",
+    "emergency_24_7": False,
+    "google_review_count": 80,
+    "multiple_locations": False,
+    "boarding_services": None,  # Missing
+    "online_booking": True,
+    "patient_portal": False,
+    "decision_maker": None,  # Missing
+    "google_rating": 4.2,
+    "website_url": "https://example.com"
+}
+# Expected: (25 × 0.9) + 12 + 10 + 8 + 0 = 52.5 pts (Warm)
+
+# Scenario C: Low confidence
+LOW_CONFIDENCE = {
+    "vet_count_total": 6,
+    "vet_count_confidence": "low",
+    "emergency_24_7": True,
+    "google_review_count": 150,
+    "decision_maker": {"name": "Dr. Jones"},
+    "google_rating": 4.5,
+    "website_url": "https://example.com"
+}
+# Expected: (25 × 0.7) + 35 + 0 + 10 + 5 = 67.5 pts (Warm), confidence flag
+
+# Scenario D: No enrichment
+NO_ENRICHMENT = {
+    "vet_count_total": None,
+    "enrichment_status": None,
+    "google_review_count": 100,
+    "google_rating": 4.3,
+    "website_url": "https://example.com",
+    "multiple_locations": False
+}
+# Expected: 20 pts baseline, Priority = "Pending Enrichment"
+
+# Scenario E: Enrichment failed
+ENRICHMENT_FAILED = {
+    "enrichment_status": "Completed",
+    "enrichment_error": "LLM timeout",
+    "vet_count_total": None,
+    "google_review_count": 120,
+    "google_rating": 4.6,
+    "website_url": "https://example.com"
+}
+# Expected: lead_score = null, error logged, baseline calculated
+```
+
+---
+
+## Acceptance Criteria
+
+1. ✅ 150 practices scored within 30 seconds (parallel execution)
+2. ✅ ICP fit scores accurate (0-120 range) for all scenarios (A-E)
+3. ✅ Sweet Spot defined as 3-8 vets (not 3-5)
+4. ✅ Multiple locations bonus applied (+10 pts)
+5. ✅ Confidence penalties applied correctly (high=1.0x, medium=0.9x, low=0.7x)
+6. ✅ Dual scoring system works (initial_score preserved, lead_score calculated)
+7. ✅ Auto-trigger after FEAT-002 enrichment
+8. ✅ Manual rescore command works
+9. ✅ Baseline-only scoring for unenriched practices (Scenario D)
+10. ✅ Graceful error handling for enrichment failures (Scenario E)
+11. ✅ Error logging in Score Breakdown field (JSON format)
+12. ✅ Enrichment Status preserved on scoring errors
+13. ✅ Timeout enforced (5 seconds per practice)
+14. ✅ Priority tiers assigned correctly (including "Pending Enrichment")
+15. ✅ Score breakdown JSON valid and human-readable
+16. ✅ Cost: $0 (pure calculation, no API calls)
+
+---
+
+## Dependencies
 
 **Python Packages:**
 ```
@@ -768,96 +981,104 @@ notion-client==2.2.1
 ```
 
 **Feature Dependencies:**
-- **Depends on:** FEAT-000 (Models, Logger, NotionClient), FEAT-001 (initial scores), FEAT-002 (enrichment data)
+- **Depends on:** FEAT-000 (Models, Logger, NotionClient), FEAT-001 (initial scores), FEAT-002 (enrichment data, auto-trigger)
 - **Depended on by:** None (final pipeline stage)
 
-### Cost
+---
+
+## Cost
 
 **$0** - Pure calculation, no API calls
 
-### Timeline Estimate
+---
 
-**2 hours** to implement and test:
-- Hour 1: LeadScorer + PracticeClassifier + PriorityTierAssigner
-- Hour 2: ScoreBreakdown + NotionClient.update_practice_scoring() + testing
+## Timeline Estimate
+
+**3 hours** to implement and test:
+- Hour 1: LeadScorer + updated algorithm (sweet spot, multiple locations, confidence penalties)
+- Hour 2: Dual scoring integration + auto-trigger + error handling
+- Hour 3: Manual rescore command + comprehensive testing (Scenarios A-E)
+
+---
 
 ## Open Questions & Uncertainties
 
 ### Scoring Logic
-- ❓ **Configurable weights?** Make scoring weights editable in config.json?
-  - **Recommendation:** Yes, add to ScoringConfig
-  - **Rationale:** Business may want to adjust priorities without code changes
+- ❓ **Adjust sweet spot range dynamically?** Allow business to change 3-8 to 4-10 via config?
+  - **Recommendation:** Yes, already configurable in ScoringConfig
+  - **Rationale:** Business may refine ICP based on conversion data
 
-- ❓ **Custom formulas?** Support custom scoring formulas (e.g., ML models)?
-  - **Recommendation:** Phase 2
-  - **Rationale:** Adds complexity, rule-based scoring sufficient for MVP
+### Error Recovery
+- ❓ **Automatic retry on scoring timeout?** Retry failed scoring after enrichment completes?
+  - **Recommendation:** No (Phase 2)
+  - **Rationale:** Manual rescore command sufficient for MVP, avoids retry complexity
 
-### Practice Classification
-- ❓ **Configurable thresholds?** Make size classification thresholds editable?
-  - **Recommendation:** Yes, add to ScoringConfig
-  - **Rationale:** "Sweet Spot" may vary by business
+### Confidence Penalties
+- ❓ **Apply confidence penalty to other dimensions?** Currently only applied to practice_size_score
+  - **Recommendation:** Monitor and evaluate (Phase 2)
+  - **Rationale:** Vet count is most critical field, other fields less confidence-sensitive
 
-### Priority Tiers
-- ❓ **Manual overrides?** Allow sales reps to manually adjust tier?
-  - **Recommendation:** Phase 2
-  - **Rationale:** Adds complexity, trust algorithm first
-
-- ❓ **Tier expiry?** Demote Hot → Warm after X days with no contact?
-  - **Recommendation:** Phase 2
-  - **Rationale:** Requires time-based logic, not critical for MVP
-
-### Score Breakdown
-- ❓ **Personalized snippets?** Generate email snippets based on score breakdown?
-  - **Recommendation:** Phase 2
-  - **Rationale:** Nice-to-have, not critical for prioritization
+---
 
 ## Implementation Notes
 
 ### Critical Path
-1. LeadScorer + scoring dimensions (depends on FEAT-000 models, FEAT-002 enrichment)
-2. PracticeClassifier (simple classification logic)
-3. PriorityTierAssigner (tier thresholds)
-4. ScoreBreakdown generator (JSON formatting)
-5. NotionClient.update_practice_scoring() (extends FEAT-000)
+1. Update LeadScorer with new algorithm (sweet spot 3-8, multiple locations, confidence penalties)
+2. Implement dual scoring (preserve initial_score, calculate lead_score)
+3. Add auto-trigger integration with FEAT-002
+4. Implement error handling for Scenarios D & E
+5. Create manual rescore CLI command
+6. Comprehensive testing (all scenarios)
 
 ### Sequence
 ```
-Day 1 (2 hours):
-  Hour 1: LeadScorer + classification + tier assignment
-  Hour 2: Score breakdown + Notion updates + testing
+Day 1 (3 hours):
+  Hour 1: Update scoring algorithm + confidence penalties
+  Hour 2: Dual scoring + auto-trigger + error handling
+  Hour 3: Manual rescore command + testing
 ```
 
 ### Gotchas
-1. **Confidence penalty:** Must apply to practice size score, not total score
-2. **Decision maker bonus:** Counts toward 120 total, not separate
-3. **Baseline normalization:** FEAT-001 score (0-25) must normalize to 0-10
-4. **JSON serialization:** Score breakdown must be valid JSON for Notion
-5. **Sales field preservation:** Must read existing record before update
-6. **Tier distribution:** Expected ~23% Hot, validate this holds
+1. **Sweet spot range:** 3-8 vets (not 3-5) - update all references
+2. **Multiple locations:** +10 pts in call_volume dimension
+3. **Confidence penalty:** Applied to practice_size_score only (not total score)
+4. **Dual scoring:** Preserve initial_score, never overwrite
+5. **Auto-trigger timeout:** 5 seconds per practice, log error if exceeded
+6. **Error state:** lead_score = null, Enrichment Status preserved
+7. **Baseline recalculation:** Don't reuse initial_score, recalculate from Google Maps data
+8. **Pending Enrichment tier:** Separate from Out of Scope (different meaning)
+
+---
 
 ## Success Metrics
 
 **Definition of Done:**
-- 150 practices scored within 60 seconds
-- ICP fit scores accurate (0-120)
-- Practice size classifications correct
-- Priority tiers assigned correctly
-- Score breakdown JSON valid
-- Notion records updated
-- Sales workflow fields preserved
-- Scoring summary report generated
-- Score recalculation works
+- 150 practices scored within 30 seconds
+- All scenarios (A-E) handled correctly
+- Dual scoring system works (initial_score + lead_score)
+- Auto-trigger integration complete
+- Manual rescore command functional
+- Error handling comprehensive (no blocking)
+- Confidence penalties applied correctly
+- Sweet spot range updated (3-8 vets)
+- Multiple locations bonus applied
+- Score breakdown includes confidence flags
+- Notion updates preserve enrichment state
 - Cost: $0
 
 **Quality Bar:**
-- 80%+ test coverage on scoring logic
-- Integration test passes (full pipeline)
-- Score distribution matches expectations (~23% Hot, ~37% Warm)
+- 90%+ test coverage on scoring logic
+- Integration tests pass (all scenarios)
 - No unhandled exceptions
+- Error logs comprehensive and actionable
+
+---
 
 ## Future Enhancements (Phase 2+)
 
-- Configurable scoring weights (no code changes)
+- Automatic retry on scoring timeout
+- Score history tracking (changes over time)
+- Confidence penalty applied to all dimensions (not just practice_size)
 - Custom scoring formulas (ML models)
 - Manual tier overrides
 - Tier expiry (time-based deprioritization)
@@ -865,17 +1086,16 @@ Day 1 (2 hours):
 - Competitive analysis (nearby practices)
 - Predictive scoring (conversion likelihood)
 - Lead routing automation (assign to reps)
-- Score history tracking (changes over time)
 
 ---
 
 **Dependencies:**
-- **Depends on:** FEAT-000 (Shared Infrastructure), FEAT-001 (Initial Scores), FEAT-002 (Enrichment Data)
+- **Depends on:** FEAT-000 (Shared Infrastructure), FEAT-001 (Initial Scores), FEAT-002 (Enrichment Data, Auto-Trigger)
 - **Depended on by:** None (final pipeline stage)
 
 **Related Documents:**
 - [FEAT-000 PRD](../FEAT-000_shared-infrastructure/prd.md) - Shared infrastructure
-- [FEAT-001 PRD](../FEAT-001_google-maps-notion/prd.md) - Initial scoring
-- [FEAT-002 PRD](../FEAT-002_website-enrichment/prd.md) - Enrichment data
+- [FEAT-001 PRD](../FEAT-001_google-maps-notion/prd.md) - Initial scoring (initial_score)
+- [FEAT-002 PRD](../FEAT-002_website-enrichment/prd.md) - Enrichment data (auto-trigger source)
 - [docs/system/database.md](../../system/database.md) - Notion schema
 - [docs/system/architecture.md](../../system/architecture.md) - Pipeline architecture

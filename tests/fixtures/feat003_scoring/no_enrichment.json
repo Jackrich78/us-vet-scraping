@@ -1,0 +1,24 @@
+{
+  "practice_id": "test-005",
+  "practice_name": "No Enrichment Test Clinic",
+  "google_maps_data": {
+    "rating": 4.8,
+    "address": "555 Maple Drive, Fort Worth, TX 76101"
+  },
+  "enrichment_data": null,
+  "enrichment_status": "Not Started",
+  "expected_score": {
+    "practice_size": 0,
+    "call_volume": 0,
+    "technology": 0,
+    "baseline": 40,
+    "decision_maker": 0,
+    "total_before_penalty": 40,
+    "confidence_multiplier": 1.0,
+    "final_score": 40,
+    "note": "Baseline-only scoring (no enrichment data)"
+  },
+  "expected_tier": "⏳ Pending Enrichment",
+  "expected_confidence_flags": "",
+  "scenario": "D - No enrichment data available"
+}

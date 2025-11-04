@@ -1,0 +1,33 @@
+{
+  "practice_id": "test-003",
+  "practice_name": "Partial Enrichment Test Clinic (No Website)",
+  "google_maps_data": {
+    "rating": 4.5,
+    "address": "789 Pine Street, Houston, TX 77001"
+  },
+  "enrichment_data": {
+    "vet_count": 4,
+    "vet_count_confidence": "high",
+    "reviews": 80,
+    "number_of_locations": 1,
+    "emergency_services": true,
+    "website": null,
+    "decision_maker_name": "Dr. Michael Chen",
+    "decision_maker_title": "Practice Owner"
+  },
+  "enrichment_status": "Completed",
+  "expected_score": {
+    "practice_size": 25,
+    "call_volume": 10,
+    "technology": 0,
+    "baseline": 40,
+    "decision_maker": 20,
+    "total_before_penalty": 95,
+    "confidence_multiplier": 1.0,
+    "final_score": 95,
+    "note": "Website not found"
+  },
+  "expected_tier": "🔥 Hot (85-120)",
+  "expected_confidence_flags": "⚠️ Website Not Found",
+  "scenario": "B - Partial enrichment, missing technology"
+}

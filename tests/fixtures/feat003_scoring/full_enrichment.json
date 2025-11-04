@@ -1,0 +1,34 @@
+{
+  "practice_id": "test-001",
+  "practice_name": "Full Enrichment Test Clinic",
+  "google_maps_data": {
+    "rating": 4.8,
+    "address": "123 Main Street, Austin, TX 78701",
+    "phone": "+1-512-555-0100"
+  },
+  "enrichment_data": {
+    "vet_count": 6,
+    "vet_count_confidence": "high",
+    "reviews": 150,
+    "number_of_locations": 2,
+    "emergency_services": true,
+    "website": "https://fullclinic.com",
+    "decision_maker_name": "Dr. Sarah Johnson",
+    "decision_maker_title": "Owner & Chief Veterinarian"
+  },
+  "enrichment_status": "Completed",
+  "expected_score": {
+    "practice_size": 25,
+    "call_volume": 35,
+    "technology": 10,
+    "baseline": 40,
+    "decision_maker": 20,
+    "total_before_penalty": 130,
+    "confidence_multiplier": 1.0,
+    "final_score": 120,
+    "note": "Score capped at 120 (maximum)"
+  },
+  "expected_tier": "🔥 Hot (85-120)",
+  "expected_confidence_flags": "",
+  "scenario": "A - Full enrichment with high confidence"
+}

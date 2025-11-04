@@ -1,0 +1,26 @@
+# Minimal dependencies for FEAT-001 (Google Maps → Notion pipeline)
+# Python 3.11+ required
+
+# Core Dependencies
+pydantic==2.9.2
+pydantic-settings==2.5.2
+python-dotenv==1.0.1
+
+# API Clients
+apify-client==2.2.1
+notion-client==2.2.1
+
+# Retry Logic
+tenacity==9.0.0
+
+# Phone Number Normalization
+phonenumbers==8.13.47
+
+# CLI
+click==8.1.7
+
+# Testing
+pytest==8.3.3
+pytest-asyncio==0.24.0
+pytest-cov==5.0.0
+pytest-mock==3.14.0

@@ -1,0 +1,33 @@
+{
+  "practice_id": "test-002",
+  "practice_name": "Partial Enrichment Test Clinic (No DM)",
+  "google_maps_data": {
+    "rating": 4.6,
+    "address": "456 Oak Avenue, Dallas, TX 75201"
+  },
+  "enrichment_data": {
+    "vet_count": 5,
+    "vet_count_confidence": "high",
+    "reviews": 120,
+    "number_of_locations": 1,
+    "emergency_services": false,
+    "website": "https://partialclinic.com",
+    "decision_maker_name": null,
+    "decision_maker_title": null
+  },
+  "enrichment_status": "Completed",
+  "expected_score": {
+    "practice_size": 25,
+    "call_volume": 15,
+    "technology": 10,
+    "baseline": 40,
+    "decision_maker": 0,
+    "total_before_penalty": 90,
+    "confidence_multiplier": 1.0,
+    "final_score": 90,
+    "note": "Decision maker not found"
+  },
+  "expected_tier": "🔥 Hot (85-120)",
+  "expected_confidence_flags": "⚠️ Decision Maker Not Found",
+  "scenario": "B - Partial enrichment, missing decision maker"
+}
