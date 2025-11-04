@@ -123,7 +123,10 @@ Contact Practice Manager: manager@cambridgevet.com
     print("="*60)
     print("OPENAI STRUCTURED OUTPUTS TEST")
     print("="*60)
-    print(f"Model: gpt-4o-mini")
+
+    # Get model from environment
+    model = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+    print(f"Model: {model}")
     print(f"Method: beta.chat.completions.parse()")
     print()
 
@@ -141,7 +144,7 @@ Contact Practice Manager: manager@cambridgevet.com
         try:
             # Test structured output extraction
             response = client.beta.chat.completions.parse(
-                model="gpt-4o-mini",
+                model=model,
                 messages=[
                     {"role": "system", "content": "Extract veterinary practice data into structured JSON. Only include information explicitly stated in the text."},
                     {"role": "user", "content": sample["text"]}

@@ -1,0 +1,517 @@
+{
+  "database_id": "2a0edda2a9a081d98dc9daa43c65e744",
+  "total_fields": 66,
+  "existing_fields": {
+    "Confirmed Vet Count - Per Location": "number",
+    "Has Multiple Locations": "checkbox",
+    "Priority Tier": "select",
+    "Decision Maker Email": "email",
+    "Vet Count Confidence": "select",
+    "Awards/Accreditations": "multi_select",
+    "Google Rating": "number",
+    "Google Place ID": "rich_text",
+    "Confirmed Vet Count - Total": "number",
+    "Operating Hours": "rich_text",
+    "Online Booking": "checkbox",
+    "LinkedIn Profile URL": "url",
+    "State": "rich_text",
+    "Lead Score": "number",
+    "Decision Maker Role": "select",
+    "Business Categories": "multi_select",
+    "Enrichment Error": "rich_text",
+    "Decision Maker Name": "rich_text",
+    "Email Status": "select",
+    "Research Notes": "rich_text",
+    "Call Notes": "rich_text",
+    "Address": "rich_text",
+    "Vet Count": "number",
+    "Practice Size Category": "select",
+    "Patient Portal": "checkbox",
+    "Owner/Manager Name": "rich_text",
+    "Phone": "phone_number",
+    "Next Follow-Up Date": "date",
+    "Owner/Manager Title": "select",
+    "Has Online Booking": "checkbox",
+    "Has Emergency Services": "checkbox",
+    "Unique Services": "multi_select",
+    "Decision Maker Contact Quality": "select",
+    "Website": "url",
+    "Times Scraped": "number",
+    "City": "rich_text",
+    "Out of Scope Reason": "select",
+    "Enrichment Status": "select",
+    "Score Breakdown": "rich_text",
+    "ZIP Code": "rich_text",
+    "24/7 Emergency Services": "checkbox",
+    "Personalization Context (Multi)": "multi_select",
+    "Specialty Services": "multi_select",
+    "Telemedicine": "checkbox",
+    "Google Review Count": "number",
+    "Google Maps URL": "url",
+    "Status": "select",
+    "Last Scraped Date": "date",
+    "Wellness Programs": "checkbox",
+    "Owner/Manager Email": "email",
+    "Technology Features": "multi_select",
+    "Data Sources": "multi_select",
+    "Personalization Context": "rich_text",
+    "First Scraped Date": "date",
+    "Digital Records Mentioned": "checkbox",
+    "Data Completeness": "select",
+    "Assigned To": "people",
+    "Scrape Run ID": "rich_text",
+    "Services Offered": "multi_select",
+    "Last Enrichment Date": "date",
+    "Boarding Services": "checkbox",
+    "Last Contact Date": "date",
+    "Next Action": "rich_text",
+    "Outreach Attempts": "number",
+    "Decision Maker Phone": "phone_number",
+    "Name": "title"
+  },
+  "feature_requirements": {
+    "FEAT-001": {
+      "READS": [],
+      "WRITES": [
+        [
+          "Name",
+          "title",
+          "Practice name"
+        ],
+        [
+          "Address",
+          "rich_text",
+          "Full street address"
+        ],
+        [
+          "City",
+          "rich_text",
+          "City name"
+        ],
+        [
+          "State",
+          "select",
+          "State (MA, etc.)"
+        ],
+        [
+          "Zip",
+          "rich_text",
+          "Zip code"
+        ],
+        [
+          "Phone",
+          "phone_number",
+          "Primary phone"
+        ],
+        [
+          "Website",
+          "url",
+          "Practice website"
+        ],
+        [
+          "Google Maps URL",
+          "url",
+          "Google Maps listing URL"
+        ],
+        [
+          "Place ID",
+          "rich_text",
+          "Unique Google Place ID"
+        ],
+        [
+          "Rating",
+          "number",
+          "Google rating 0-5"
+        ],
+        [
+          "Review Count",
+          "number",
+          "Number of Google reviews"
+        ],
+        [
+          "Categories",
+          "multi_select",
+          "Google business categories"
+        ],
+        [
+          "Hours",
+          "rich_text",
+          "Operating hours"
+        ],
+        [
+          "Initial Score",
+          "number",
+          "0-25 baseline score from Google data"
+        ],
+        [
+          "Status",
+          "select",
+          "Lead status (New, Contacted, etc.)"
+        ]
+      ]
+    },
+    "FEAT-002": {
+      "READS": [
+        [
+          "Name",
+          "title",
+          "To identify practice"
+        ],
+        [
+          "Website",
+          "url",
+          "To scrape for enrichment"
+        ],
+        [
+          "Place ID",
+          "rich_text",
+          "Unique identifier"
+        ]
+      ],
+      "WRITES": [
+        [
+          "Vet Count",
+          "number",
+          "Total veterinarians"
+        ],
+        [
+          "Vet Count Confidence",
+          "select",
+          "high/medium/low"
+        ],
+        [
+          "Vet Count Per Location",
+          "rich_text",
+          "Breakdown by location"
+        ],
+        [
+          "Emergency 24/7",
+          "checkbox",
+          "Has 24/7 emergency services"
+        ],
+        [
+          "Online Booking",
+          "checkbox",
+          "Has online appointment booking"
+        ],
+        [
+          "Patient Portal",
+          "checkbox",
+          "Has client portal"
+        ],
+        [
+          "Telemedicine",
+          "checkbox",
+          "Offers telemedicine/virtual care"
+        ],
+        [
+          "Specialty Services",
+          "multi_select",
+          "Surgery, Dentistry, etc."
+        ],
+        [
+          "Decision Maker Name",
+          "rich_text",
+          "Name of practice owner/manager"
+        ],
+        [
+          "Decision Maker Role",
+          "rich_text",
+          "Job title"
+        ],
+        [
+          "Decision Maker Email",
+          "email",
+          "Contact email"
+        ],
+        [
+          "Decision Maker Phone",
+          "phone_number",
+          "Contact phone"
+        ],
+        [
+          "Personalization Context",
+          "rich_text",
+          "2-3 unique facts"
+        ],
+        [
+          "Awards Accreditations",
+          "multi_select",
+          "Certifications, awards"
+        ],
+        [
+          "Enrichment Status",
+          "select",
+          "New/In Progress/Completed/Failed"
+        ],
+        [
+          "Last Enrichment Date",
+          "date",
+          "When enrichment last ran"
+        ],
+        [
+          "Data Completeness",
+          "number",
+          "0-100% data quality score"
+        ],
+        [
+          "Data Sources",
+          "rich_text",
+          "URLs scraped"
+        ]
+      ]
+    },
+    "FEAT-003": {
+      "READS": [
+        [
+          "Rating",
+          "number",
+          "Google rating for baseline"
+        ],
+        [
+          "Review Count",
+          "number",
+          "Google reviews for call volume & baseline"
+        ],
+        [
+          "Website",
+          "url",
+          "For baseline scoring"
+        ],
+        [
+          "Multiple Locations",
+          "checkbox",
+          "For call volume & baseline"
+        ],
+        [
+          "Vet Count",
+          "number",
+          "For practice size scoring"
+        ],
+        [
+          "Vet Count Confidence",
+          "select",
+          "For confidence penalty"
+        ],
+        [
+          "Emergency 24/7",
+          "checkbox",
+          "For practice size bonus"
+        ],
+        [
+          "Online Booking",
+          "checkbox",
+          "For technology scoring"
+        ],
+        [
+          "Patient Portal",
+          "checkbox",
+          "For technology scoring"
+        ],
+        [
+          "Telemedicine",
+          "checkbox",
+          "For technology scoring"
+        ],
+        [
+          "Specialty Services",
+          "multi_select",
+          "For call volume scoring"
+        ],
+        [
+          "Decision Maker Name",
+          "rich_text",
+          "For decision maker bonus"
+        ],
+        [
+          "Decision Maker Email",
+          "email",
+          "For decision maker bonus"
+        ],
+        [
+          "Enrichment Status",
+          "select",
+          "To check if enrichment completed"
+        ]
+      ],
+      "WRITES": [
+        [
+          "Lead Score",
+          "number",
+          "0-120 ICP fit score"
+        ],
+        [
+          "Priority Tier",
+          "select",
+          "Hot/Warm/Cold/Out of Scope/Pending"
+        ],
+        [
+          "Score Breakdown",
+          "rich_text",
+          "JSON with component scores"
+        ],
+        [
+          "Confidence Flags",
+          "multi_select",
+          "Warnings about data quality"
+        ],
+        [
+          "Scoring Status",
+          "select",
+          "Scored/Failed/Not Scored"
+        ]
+      ]
+    }
+  },
+  "missing_fields": [
+    [
+      "Hours",
+      "rich_text",
+      "FEAT-001"
+    ],
+    [
+      "Place ID",
+      "rich_text",
+      "FEAT-002"
+    ],
+    [
+      "Vet Count Per Location",
+      "rich_text",
+      "FEAT-002"
+    ],
+    [
+      "Zip",
+      "rich_text",
+      "FEAT-001"
+    ],
+    [
+      "Emergency 24/7",
+      "checkbox",
+      "FEAT-003"
+    ],
+    [
+      "Categories",
+      "multi_select",
+      "FEAT-001"
+    ],
+    [
+      "Awards Accreditations",
+      "multi_select",
+      "FEAT-002"
+    ],
+    [
+      "Review Count",
+      "number",
+      "FEAT-003"
+    ],
+    [
+      "Place ID",
+      "rich_text",
+      "FEAT-001"
+    ],
+    [
+      "Multiple Locations",
+      "checkbox",
+      "FEAT-003"
+    ],
+    [
+      "Review Count",
+      "number",
+      "FEAT-001"
+    ],
+    [
+      "Initial Score",
+      "number",
+      "FEAT-001"
+    ],
+    [
+      "Rating",
+      "number",
+      "FEAT-003"
+    ],
+    [
+      "Scoring Status",
+      "select",
+      "FEAT-003"
+    ],
+    [
+      "Rating",
+      "number",
+      "FEAT-001"
+    ],
+    [
+      "Confidence Flags",
+      "multi_select",
+      "FEAT-003"
+    ],
+    [
+      "Emergency 24/7",
+      "checkbox",
+      "FEAT-002"
+    ]
+  ],
+  "potential_duplicates": [
+    [
+      "Rating",
+      "Google Rating",
+      "Different names for same field"
+    ],
+    [
+      "Review Count",
+      "Google Review Count",
+      "Different names for same field"
+    ],
+    [
+      "Multiple Locations",
+      "Has Multiple Locations",
+      "Different names for same field"
+    ],
+    [
+      "Emergency 24/7",
+      "Has Emergency Services",
+      "Different names for same field"
+    ]
+  ],
+  "unused_fields": [
+    "Confirmed Vet Count - Per Location",
+    "Has Multiple Locations",
+    "Awards/Accreditations",
+    "Google Rating",
+    "Google Place ID",
+    "Confirmed Vet Count - Total",
+    "Operating Hours",
+    "LinkedIn Profile URL",
+    "Business Categories",
+    "Enrichment Error",
+    "Email Status",
+    "Research Notes",
+    "Call Notes",
+    "Practice Size Category",
+    "Owner/Manager Name",
+    "Next Follow-Up Date",
+    "Owner/Manager Title",
+    "Has Online Booking",
+    "Has Emergency Services",
+    "Unique Services",
+    "Decision Maker Contact Quality",
+    "Times Scraped",
+    "Out of Scope Reason",
+    "ZIP Code",
+    "24/7 Emergency Services",
+    "Personalization Context (Multi)",
+    "Google Review Count",
+    "Last Scraped Date",
+    "Wellness Programs",
+    "Owner/Manager Email",
+    "Technology Features",
+    "First Scraped Date",
+    "Digital Records Mentioned",
+    "Assigned To",
+    "Scrape Run ID",
+    "Services Offered",
+    "Boarding Services",
+    "Last Contact Date",
+    "Next Action",
+    "Outreach Attempts"
+  ]
+}

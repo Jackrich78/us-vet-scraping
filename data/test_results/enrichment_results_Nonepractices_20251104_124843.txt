@@ -1,0 +1,75 @@
+FEAT-002 Enrichment Test Results
+Timestamp: 20251104_124843
+Limit: None practices
+======================================================================
+
+Total: 14
+Successful: 6
+Failed: 8
+Cost: $0.0046
+Time: 50.1s
+
+Detailed Results:
+----------------------------------------------------------------------
+
+
+  Status: success
+  Vet Count: None
+  Decision Maker: None
+
+
+  Status: success
+  Vet Count: None
+  Decision Maker: Karen
+
+
+  Status: success
+  Vet Count: None
+  Decision Maker: None
+
+
+  Status: success
+  Vet Count: None
+  Decision Maker: None
+
+
+  Status: success
+  Vet Count: None
+  Decision Maker: None
+
+
+  Status: success
+  Vet Count: None
+  Decision Maker: None
+
+
+  Status: scrape_failed
+  Error: Website scraping failed (0 pages scraped)
+
+
+  Status: scrape_failed
+  Error: Website scraping failed (0 pages scraped)
+
+
+  Status: scrape_failed
+  Error: Website scraping failed (0 pages scraped)
+
+
+  Status: scrape_failed
+  Error: Website scraping failed (0 pages scraped)
+
+
+  Status: scrape_failed
+  Error: Website scraping failed (0 pages scraped)
+
+
+  Status: scrape_failed
+  Error: Website scraping failed (0 pages scraped)
+
+
+  Status: scrape_failed
+  Error: Website scraping failed (0 pages scraped)
+
+
+  Status: scrape_failed
+  Error: Website scraping failed (0 pages scraped)

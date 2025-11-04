@@ -1096,6 +1096,6 @@ Day 1 (3 hours):
 **Related Documents:**
 - [FEAT-000 PRD](../FEAT-000_shared-infrastructure/prd.md) - Shared infrastructure
 - [FEAT-001 PRD](../FEAT-001_google-maps-notion/prd.md) - Initial scoring (initial_score)
-- [FEAT-002 PRD](../FEAT-002_website-enrichment/prd.md) - Enrichment data (auto-trigger source)
+- [FEAT-002 README](../FEAT-002_website-enrichment/README.md) - Enrichment data (auto-trigger source)
 - [docs/system/database.md](../../system/database.md) - Notion schema
 - [docs/system/architecture.md](../../system/architecture.md) - Pipeline architecture

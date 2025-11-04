@@ -14,6 +14,14 @@ FEAT-002 requires scraping veterinary practice websites to extract structured da
 
 **Description:** Use Crawl4AI BFSDeepCrawlStrategy to scrape homepage + /about + /team pages (max 5 pages per practice), extract data using OpenAI structured outputs with tiktoken cost tracking, and update Notion records in batches with automatic FEAT-003 scoring trigger via synchronous dependency injection.
 
+**⚠️ IMPLEMENTATION NOTE:** This architecture was validated via spike testing. All critical assumptions confirmed:
+- Crawl4AI 0.7.6 BFSDeepCrawlStrategy works as specified
+- tiktoken variance <1% for long texts (website content)
+- OpenAI cost $0.000121 per extraction (93% under original estimate)
+- Notion partial updates automatically preserve sales fields (no read-before-write needed)
+- Re-enrichment query OR filter validated
+See `spike-results.md` for complete validation details.
+
 **Key Characteristics:**
 - BFSDeepCrawlStrategy with URL pattern filtering (*about*, *team*, *staff*, *contact*)
 - 5 concurrent practices (not 5 pages), max_depth=1, max_pages=5
@@ -234,12 +242,17 @@ Multi-page scraping with BFSDeepCrawlStrategy provides 2-3x better decision make
 7. **Error summary:** Aggregate and categorize all failures (scrape, LLM, notion, cost, scoring)
 
 ### Technical Dependencies
-- **crawl4ai:** 0.3.74 (async web crawler with deep crawling strategies)
-- **openai:** 1.54.3 (structured outputs via beta.chat.completions.parse)
+- **crawl4ai:** 0.7.6 ⚠️ **CRITICAL - Must be 0.7.6+** (0.3.74 lacks BFSDeepCrawlStrategy)
+- **openai:** 2.7.1 (structured outputs via beta.chat.completions.parse)
 - **tiktoken:** 0.8.0 (token counting for gpt-4o-mini with o200k_base encoding)
 - **notion-client:** 2.2.1 (Notion API integration)
-- **pydantic:** 2.9.2 (data validation and structured outputs schema)
+- **pydantic:** 2.12.3 (data validation and structured outputs schema)
 - **tenacity:** 9.0.0 (retry logic with exponential backoff)
+
+**Version Notes:**
+- Crawl4AI upgraded 0.3.74 → 0.7.6 during spike testing (BFSDeepCrawlStrategy added in 0.7.x)
+- OpenAI, Pydantic upgraded as dependencies of Crawl4AI 0.7.6
+- See `spike-results.md` for complete dependency list and upgrade impact
 
 ### Configuration Required
 - **config.json additions:**
@@ -266,8 +279,9 @@ Multi-page scraping with BFSDeepCrawlStrategy provides 2-3x better decision make
 
 ### Risk 1: Cost Runaway (OpenAI API)
 - **Impact:** High (could exceed budget if token counting fails)
-- **Likelihood:** Low (tiktoken is well-tested, CostTracker has hard abort)
-- **Mitigation:** Token counting happens BEFORE each API call, hard abort at $1.00, test with mock token counts, log cumulative cost every 10 practices
+- **Likelihood:** Low (tiktoken validated <1% variance for long texts, CostTracker has hard abort)
+- **Mitigation:** Token counting happens BEFORE each API call, hard abort at $1.00, 10% buffer in CostTracker, log cumulative cost every 10 practices
+- **Spike Result:** ✅ tiktoken variance <1% for website-length texts, actual cost $0.000121 per extraction (93% under estimate)
 
 ### Risk 2: Multi-Page Scraping Failures
 - **Impact:** Medium (reduces data quality if many pages fail)

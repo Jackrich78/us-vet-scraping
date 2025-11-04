@@ -255,7 +255,7 @@ class WebsiteData(BaseModel):
 - **Total pages scraped:** ~375 pages for 150 practices
 
 **Dependencies:**
-- `crawl4ai==0.3.74`
+- `crawl4ai==0.7.6` ⚠️ **Must be 0.7.6+** (0.3.74 lacks BFSDeepCrawlStrategy)
 - `FEAT-000` ConfigLoader, Logger, RetryHandler
 - `FEAT-000` WebsiteData model (updated with `depth` field)
 
@@ -915,13 +915,15 @@ OPENAI_API_KEY=sk-proj-xxxxxxxxxx
 
 **Python Packages:**
 ```
-crawl4ai==0.3.74
-openai==1.54.3
+crawl4ai==0.7.6
+openai==2.7.1
 tiktoken==0.8.0
 notion-client==2.2.1
-pydantic==2.9.2
+pydantic==2.12.3
 tenacity==9.0.0
 ```
+
+**CRITICAL:** Crawl4AI 0.7.6 is required for BFSDeepCrawlStrategy. Version 0.3.74 does not have deep crawling support. See `spike-results.md` for upgrade details.
 
 **External APIs:**
 - OpenAI: gpt-4o-mini with structured outputs
@@ -1031,17 +1033,18 @@ class EnrichmentOrchestrator:
 **Crawl4AI:** $0 (local, no API costs)
 
 **OpenAI:** $0.15/1M input + $0.60/1M output (gpt-4o-mini)
-- Multi-page scraping: ~2.5 pages per practice, ~4000 input tokens per extraction
-- 150 practices × 4000 input tokens × $0.15/1M = $0.090
-- 150 practices × 500 output tokens × $0.60/1M = $0.045
-- Retries (5%): +$0.007
-- Buffer (10%): +$0.014
-- **Total:** **$0.40** (was $0.10 for homepage-only)
+- **Validated actual cost:** $0.000121 per extraction (from spike testing)
+- 150 practices × $0.000121 = $0.018
+- Retries (10%): +$0.002
+- Buffer (20%): +$0.004
+- **Total:** **$0.03** ✅ (93% under original $0.40 estimate)
 
 **Notion:** $0 (free tier)
 
-**Total Cost:** **$0.50** (including buffer)
+**Total Cost:** **$0.05** (including buffer) - validated via spike testing
 **Cost Threshold:** $1.00 (abort if exceeded)
+
+**Note:** Original PRD estimated $0.40 based on 4000 input tokens per extraction. Spike testing revealed actual usage is ~2000 input tokens + 500 output tokens = $0.000121 per extraction. See `spike-results.md` for details.
 
 ### Timeline Estimate
 

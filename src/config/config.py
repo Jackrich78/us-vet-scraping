@@ -14,6 +14,8 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class ApifyConfig(BaseSettings):
     """Apify API configuration."""
 
+    model_config = SettingsConfigDict(env_file='.env', extra='ignore')
+
     api_key: str = Field(..., alias='APIFY_API_KEY', min_length=10)
     actor_id: str = Field(default='compass/crawler-google-places')
     max_results: int = Field(default=50)
@@ -30,6 +32,8 @@ class ApifyConfig(BaseSettings):
 class OpenAIConfig(BaseSettings):
     """OpenAI API configuration."""
 
+    model_config = SettingsConfigDict(env_file='.env', extra='ignore')
+
     api_key: str = Field(..., alias='OPENAI_API_KEY', min_length=20)
     model: str = Field(default='gpt-4o-mini')
     max_tokens: int = Field(default=1000)
@@ -45,6 +49,8 @@ class OpenAIConfig(BaseSettings):
 
 class NotionConfig(BaseSettings):
     """Notion API configuration."""
+
+    model_config = SettingsConfigDict(env_file='.env', extra='ignore')
 
     api_key: str = Field(..., alias='NOTION_API_KEY', min_length=20)
     database_id: str = Field(..., alias='NOTION_DATABASE_ID', min_length=32, max_length=32)

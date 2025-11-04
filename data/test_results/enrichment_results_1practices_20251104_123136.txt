@@ -1,0 +1,19 @@
+FEAT-002 Enrichment Test Results
+Timestamp: 20251104_123136
+Limit: 1 practices
+======================================================================
+
+Total: 1
+Successful: 0
+Failed: 1
+Cost: $0.0008
+Time: 20.9s
+
+Detailed Results:
+----------------------------------------------------------------------
+
+
+  Status: notion_failed
+  Vet Count: None
+  Decision Maker: None
+  Error: Notion API update failed

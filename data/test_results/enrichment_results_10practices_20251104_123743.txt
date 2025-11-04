@@ -1,0 +1,59 @@
+FEAT-002 Enrichment Test Results
+Timestamp: 20251104_123743
+Limit: 10 practices
+======================================================================
+
+Total: 10
+Successful: 4
+Failed: 6
+Cost: $0.0036
+Time: 49.0s
+
+Detailed Results:
+----------------------------------------------------------------------
+
+
+  Status: notion_failed
+  Vet Count: None
+  Decision Maker: None
+  Error: Notion API update failed
+
+
+  Status: success
+  Vet Count: None
+  Decision Maker: None
+
+
+  Status: success
+  Vet Count: None
+  Decision Maker: None
+
+
+  Status: success
+  Vet Count: None
+  Decision Maker: None
+
+
+  Status: success
+  Vet Count: None
+  Decision Maker: None
+
+
+  Status: scrape_failed
+  Error: Website scraping failed (0 pages scraped)
+
+
+  Status: scrape_failed
+  Error: Website scraping failed (0 pages scraped)
+
+
+  Status: scrape_failed
+  Error: Website scraping failed (0 pages scraped)
+
+
+  Status: scrape_failed
+  Error: Website scraping failed (0 pages scraped)
+
+
+  Status: scrape_failed
+  Error: Website scraping failed (0 pages scraped)
