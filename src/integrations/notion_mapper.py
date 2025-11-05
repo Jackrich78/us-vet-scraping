@@ -106,6 +106,28 @@ class NotionMapper:
         # Status → Status (Select, default: "New Lead")
         properties["Status"] = self._format_select("New Lead")
 
+        # Google Maps URL → Google Maps URL (URL, optional)
+        properties["Google Maps URL"] = self._format_url(practice.google_maps_url)
+
+        # Operating Hours → Operating Hours (Rich Text, multiline)
+        if practice.operating_hours:
+            hours_text = "\n".join(practice.operating_hours)
+            properties["Operating Hours"] = self._format_rich_text(hours_text)
+        else:
+            properties["Operating Hours"] = {"rich_text": []}
+
+        # First Scraped Date → First Scraped Date (Date field)
+        if practice.first_scraped_date:
+            properties["First Scraped Date"] = {
+                "date": {"start": practice.first_scraped_date}
+            }
+
+        # Last Scraped Date → Last Scraped Date (Date field)
+        if practice.last_scraped_date:
+            properties["Last Scraped Date"] = {
+                "date": {"start": practice.last_scraped_date}
+            }
+
         logger.debug(
             f"Mapped practice {practice.place_id} to Notion properties "
             f"({len(properties)} fields)"

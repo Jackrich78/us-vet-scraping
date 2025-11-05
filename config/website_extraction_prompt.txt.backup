@@ -49,28 +49,19 @@ From the provided website content, extract the following information in JSON for
     "locations": ["City1", "City2"]
   },
 
-  "personalization_context": [
-    "Recently opened 2nd location in Newton (2024)",
-    "Dr. Sarah Johnson featured in Boston Magazine Best Vets 2024",
-    "Family-owned for 3 generations since 1952"
-  ],
-
-  "awards_accreditations": [
-    "AAHA Accredited",
-    "Fear Free Certified"
-  ],
-
-  "recent_news_updates": [
-    "Opened 2nd location in Newton (October 2024)",
-    "Invested $2M in new surgical suite (March 2024)"
-  ],
-
-  "community_involvement": [
-    "Sponsors Boston Animal Rescue League",
-    "Partners with local schools for pet education programs"
-  ],
-
-  "practice_philosophy": "Our mission is to provide compassionate, cutting-edge veterinary care while treating every pet as family. We believe in fear-free handling and building lifelong relationships with our clients.",
+  "personalization_context": {
+    "unique_facts": [
+      "Recently opened 2nd location in Newton (2024)",
+      "Fear-free certified practice",
+      "Dr. Sarah Johnson featured in Boston Magazine Best Vets 2024",
+      "Only practice in Boston specializing in exotic birds",
+      "Family-owned for 3 generations since 1952"
+    ],
+    "awards_recognition": [],
+    "community_involvement": [],
+    "recent_expansions": [],
+    "unique_specialties": []
+  },
 
   "operating_hours": {
     "formatted": "Mon-Fri: 8am-7pm, Sat: 9am-5pm, Sun: Closed",
@@ -80,17 +71,13 @@ From the provided website content, extract the following information in JSON for
 }
 
 CRITICAL INSTRUCTIONS:
-1. The "personalization_context" field is ESSENTIAL (flat array, not nested) - find at least 2-3 unique, specific facts about this practice that could be conversation starters for a cold call.
+1. The "personalization_context.unique_facts" field is ESSENTIAL - find at least 2-3 unique, specific facts about this practice that could be conversation starters for a cold call.
 2. For vet_count, count individual veterinarians listed on team/staff pages. Be conservative - only report if confident. Better to return null than guess incorrectly.
 3. For decision_maker, look for titles like "Owner", "Practice Owner", "Practice Manager", "Hospital Administrator", "Managing Director".
 4. Extract ACTUAL names when possible, not generic titles.
 5. Return null for any field where information is not found - do not guess or hallucinate.
 6. For services and technology, only mark as true if explicitly mentioned or clearly visible on the website.
 7. Personalization context should be SPECIFIC and UNIQUE to this practice, not generic facts that apply to all vets.
-8. "awards_accreditations" should list AAHA accreditation, Fear Free Certification, and awards.
-9. "recent_news_updates" should capture news from the last 12 months (new locations, expansions, major investments).
-10. "community_involvement" should note charity partnerships, rescue support, school programs, local event sponsorships.
-11. "practice_philosophy" should extract mission statements or "our approach" sections (max 500 chars).
 
 Examples of GOOD personalization context:
 - "Opened in 1952, family-owned for 3 generations"
@@ -104,25 +91,3 @@ Examples of BAD personalization context (too generic):
 - "Friendly staff"
 - "Good reviews"
 - "Offers veterinary services"
-
-Examples of GOOD awards_accreditations:
-- "AAHA Accredited"
-- "Fear Free Certified Practice"
-- "Dr. Johnson - Boston Magazine Best Vet 2024"
-- "American Board of Veterinary Practitioners Diplomate"
-
-Examples of GOOD recent_news_updates:
-- "Opened 2nd location in Newton (October 2024)"
-- "Invested $2M in new surgical suite (March 2024)"
-- "Dr. Chen joined as head of surgery (January 2024)"
-- "Added orthopedic surgery services (Summer 2024)"
-
-Examples of GOOD community_involvement:
-- "Sponsors Boston Animal Rescue League"
-- "Partners with Cambridge Public Schools for pet education"
-- "Hosts annual pet adoption event with MSPCA"
-- "Provides pro-bono care for police K9 units"
-
-Examples of GOOD practice_philosophy:
-- "Our mission is to provide compassionate, cutting-edge veterinary care while treating every pet as family."
-- "We believe in fear-free handling, client education, and building lifelong relationships with our pet families."

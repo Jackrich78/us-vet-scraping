@@ -1,0 +1,28 @@
+FEAT-002 Enrichment Test Results
+Timestamp: 20251105_161257
+Limit: 10 practices
+======================================================================
+
+Total: 3
+Successful: 3
+Failed: 0
+Cost: $0.0025
+Time: 29.6s
+
+Detailed Results:
+----------------------------------------------------------------------
+
+
+  Status: success
+  Vet Count: None
+  Decision Maker: None
+
+
+  Status: success
+  Vet Count: None
+  Decision Maker: None
+
+
+  Status: success
+  Vet Count: 1
+  Decision Maker: Dr. Karen Reamsnyder

@@ -248,7 +248,7 @@ def run_pipeline(
 
         logger.info(f"✓ Upload complete:")
         logger.info(f"  Created: {upload_result['created']}")
-        logger.info(f"  Skipped: {upload_result['skipped']} (already exist)")
+        logger.info(f"  Updated: {upload_result.get('updated', 0)} (timestamps refreshed)")
         logger.info(f"  Failed: {upload_result['failed']}")
 
         if upload_result['failed'] > 0:
@@ -272,7 +272,7 @@ def run_pipeline(
     logger.info(f"Scraped: {len(practices)}")
     logger.info(f"Filtered: {len(filtered_practices)}")
     logger.info(f"Uploaded: {upload_result['created']}")
-    logger.info(f"Skipped: {upload_result['skipped']}")
+    logger.info(f"Updated: {upload_result.get('updated', 0)}")
     logger.info(f"Failed: {upload_result['failed']}")
 
     # AC-FEAT-001-019: Performance validation (<8 minutes)
@@ -287,7 +287,7 @@ def run_pipeline(
         "scraped": len(practices),
         "filtered": len(filtered_practices),
         "uploaded": upload_result['created'],
-        "skipped": upload_result['skipped'],
+        "updated": upload_result.get('updated', 0),
         "failed": upload_result['failed'],
         "duration_seconds": duration,
         "cost_estimate": cost_estimate

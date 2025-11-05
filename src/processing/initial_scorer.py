@@ -22,6 +22,7 @@ Total: 0-25 points (higher = better ICP fit)
 
 import logging
 from typing import List
+from datetime import datetime, timezone
 from src.models.apify_models import ApifyGoogleMapsResult
 from src.models.apify_models import VeterinaryPractice
 
@@ -129,6 +130,7 @@ class InitialScorer:
             score = self.calculate_baseline_score(practice)
 
             # Convert to VeterinaryPractice with score
+            now = datetime.now(timezone.utc).isoformat()
             scored_practice = VeterinaryPractice(
                 place_id=practice.place_id,
                 practice_name=practice.practice_name,
@@ -142,6 +144,10 @@ class InitialScorer:
                 permanently_closed=practice.permanently_closed,
                 initial_score=score,
                 priority_tier=self._determine_priority_tier(score),
+                first_scraped_date=now,
+                last_scraped_date=now,
+                google_maps_url=practice.google_maps_url,
+                operating_hours=practice.opening_hours or [],
             )
 
             scored_practices.append(scored_practice)

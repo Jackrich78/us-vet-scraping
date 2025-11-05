@@ -36,9 +36,23 @@ class ApifyGoogleMapsResult(BaseModel):
     postal_code: Optional[str] = Field(default=None, alias="postalCode")
     permanently_closed: bool = Field(default=False, alias="permanentlyClosed")
     temporarily_closed: bool = Field(default=False, alias="temporarilyClosed")
+    google_maps_url: Optional[str] = Field(default=None, alias="url")
+    opening_hours: Optional[List[str]] = Field(default=None)
 
     class Config:
         populate_by_name = True
+
+    @field_validator("opening_hours", mode="before")
+    @classmethod
+    def extract_weekday_text(cls, v):
+        """Extract weekday_text from opening_hours object."""
+        if v is None:
+            return None
+        if isinstance(v, dict):
+            return v.get("weekday_text")
+        if isinstance(v, list):
+            return v
+        return None
 
     @field_validator("business_categories", mode="before")
     @classmethod
@@ -138,6 +152,13 @@ class VeterinaryPractice(BaseModel):
     first_scraped_date: Optional[str] = Field(
         default=None, description="ISO 8601 date"
     )
+    last_scraped_date: Optional[str] = Field(
+        default=None, description="ISO 8601 date of most recent scrape"
+    )
+
+    # Additional Google Maps data
+    google_maps_url: Optional[str] = Field(default=None, description="Direct Google Maps link")
+    operating_hours: Optional[List[str]] = Field(default_factory=list, description="Weekly operating hours")
 
     @field_validator("priority_tier", mode="before")
     @classmethod

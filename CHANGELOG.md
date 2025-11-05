@@ -63,6 +63,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - ✅ CLI available: `python score_leads.py --batch` or `--practice-id <ID>`
   - Components implemented: LeadScorer, Classifier, ScoringOrchestrator, NotionScoring
 
+### Fixed
+- FEAT-002: Corrected Notion field name from "Confirmed Vet Count (Total)" to "Vet Count" (2025-11-05)
+  - Bug discovered during E2E pipeline validation
+  - Field name mismatch was preventing enrichment data from being written to Notion
+  - All enrichment tests now passing with correct field mapping
+
+### Added (Testing & Tooling)
+- E2E testing support: Added `--enable-scoring` flag to test_e2e_enrichment.py (2025-11-05)
+  - Allows full pipeline testing: Google Maps → Enrichment → Scoring
+  - Validates complete data flow through all 3 features
+  - Enables automated acceptance criteria validation
+- Validation tool: Created validate_notion_fields.py for comprehensive Notion field validation (2025-11-05)
+  - Reads Notion database schema and lists all property names
+  - Detects field name mismatches between code and Notion
+  - Prevents deployment bugs from schema drift
+  - Usage: `python validate_notion_fields.py`
+
+### Validated
+- Full E2E Pipeline Integration (2025-11-05)
+  - ✅ FEAT-001 (Google Maps scraping) → FEAT-002 (Website enrichment) → FEAT-003 (Lead scoring)
+  - ✅ All 3 features working together end-to-end
+  - ✅ Data flows correctly: Apify → Notion → Enrichment → Scoring
+  - ✅ Field mappings validated across all integration points
+  - ✅ Acceptance criteria met for complete pipeline
+
 ### Phase Roadmap
 - Phase 1 (Current): Planning & Documentation - Complete ✅
 - Phase 2 (Next): Implementation workflow (main agent), testing automation, git workflow

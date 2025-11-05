@@ -126,6 +126,57 @@ class NotionBatchUpserter:
             f"batch_size={batch_size}, rate_limit_delay={rate_limit_delay}s"
         )
 
+    def _query_existing_practices_with_page_ids(self) -> Dict[str, str]:
+        """Query existing practices and return dict of place_id -> page_id.
+
+        Returns:
+            Dict mapping Google Place ID to Notion page ID
+        """
+        logger.debug("Querying existing practices with page IDs...")
+
+        existing_practices = {}
+
+        try:
+            response = self.client.databases.query(
+                database_id=self.database_id,
+                page_size=100
+            )
+
+            for page in response.get("results", []):
+                properties = page.get("properties", {})
+                place_id_prop = properties.get("Google Place ID", {})
+                rich_text = place_id_prop.get("rich_text", [])
+
+                if rich_text and len(rich_text) > 0:
+                    place_id = rich_text[0].get("plain_text")
+                    if place_id:
+                        existing_practices[place_id] = page["id"]
+
+            # Handle pagination
+            while response.get("has_more"):
+                response = self.client.databases.query(
+                    database_id=self.database_id,
+                    page_size=100,
+                    start_cursor=response.get("next_cursor")
+                )
+
+                for page in response.get("results", []):
+                    properties = page.get("properties", {})
+                    place_id_prop = properties.get("Google Place ID", {})
+                    rich_text = place_id_prop.get("rich_text", [])
+
+                    if rich_text and len(rich_text) > 0:
+                        place_id = rich_text[0].get("plain_text")
+                        if place_id:
+                            existing_practices[place_id] = page["id"]
+
+            logger.info(f"Found {len(existing_practices)} existing practices in Notion")
+            return existing_practices
+
+        except Exception as e:
+            logger.error(f"Failed to query existing practices: {e}")
+            return {}
+
     def check_existing_place_ids(self) -> Set[str]:
         """Query Notion database for all existing Place IDs.
 
@@ -268,28 +319,63 @@ class NotionBatchUpserter:
         # Step 1: De-duplicate within batch
         unique_practices = deduplicate_by_place_id(practices)
 
-        # Step 2: Query existing Place IDs
-        existing_ids = self.check_existing_place_ids()
+        # Step 2: Query existing Place IDs and their page IDs
+        existing_practices = self._query_existing_practices_with_page_ids()
 
-        # Step 3: Filter out existing practices
-        new_practices = [p for p in unique_practices if p.place_id not in existing_ids]
-        skipped_count = len(unique_practices) - len(new_practices)
+        # Step 3: Separate new vs existing practices
+        new_practices = []
+        existing_to_update = []
 
-        if skipped_count > 0:
+        for p in unique_practices:
+            if p.place_id in existing_practices:
+                existing_to_update.append((p, existing_practices[p.place_id]))
+            else:
+                new_practices.append(p)
+
+        if existing_to_update:
             logger.info(
-                f"Skipping {skipped_count} practices (already exist in Notion)"
+                f"Updating {len(existing_to_update)} existing practices with new timestamp"
             )
 
-        if not new_practices:
-            logger.info("No new practices to upload")
-            return {"created": 0, "skipped": skipped_count, "failed": 0, "errors": []}
+        if not new_practices and not existing_to_update:
+            logger.info("No practices to process")
+            return {"created": 0, "updated": 0, "failed": 0, "errors": []}
 
-        # Step 4: Process in batches
-        created_count = 0
+        # Step 4: Update existing practices with new timestamp
+        updated_count = 0
         failed_count = 0
         errors = []
+        from datetime import datetime, timezone
 
-        total_batches = (len(new_practices) + self.batch_size - 1) // self.batch_size
+        for practice, page_id in existing_to_update:
+            try:
+                # Partial update: only Last Scraped Date
+                self.client.pages.update(
+                    page_id=page_id,
+                    properties={
+                        "Last Scraped Date": {
+                            "date": {"start": datetime.now(timezone.utc).isoformat()}
+                        }
+                    }
+                )
+                updated_count += 1
+                logger.debug(f"Updated timestamp for practice: {practice.place_id}")
+
+            except Exception as e:
+                logger.error(f"Failed to update practice {practice.place_id}: {e}")
+                failed_count += 1
+                errors.append({"place_id": practice.place_id, "error": str(e)})
+
+            # Rate limiting
+            time.sleep(self.rate_limit_delay)
+
+        if updated_count > 0:
+            logger.info(f"Updated {updated_count} existing practices")
+
+        # Step 5: Process new practices in batches
+        created_count = 0
+
+        total_batches = (len(new_practices) + self.batch_size - 1) // self.batch_size if new_practices else 0
 
         for batch_num in range(total_batches):
             start_idx = batch_num * self.batch_size
@@ -344,13 +430,13 @@ class NotionBatchUpserter:
 
         # Summary
         logger.info(
-            f"Batch upsert complete: created={created_count}, skipped={skipped_count}, "
+            f"Batch upsert complete: created={created_count}, updated={updated_count}, "
             f"failed={failed_count}"
         )
 
         return {
             "created": created_count,
-            "skipped": skipped_count,
+            "updated": updated_count,
             "failed": failed_count,
             "errors": errors,
         }

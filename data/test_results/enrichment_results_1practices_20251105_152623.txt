@@ -1,0 +1,18 @@
+FEAT-002 Enrichment Test Results
+Timestamp: 20251105_152623
+Limit: 1 practices
+======================================================================
+
+Total: 1
+Successful: 1
+Failed: 0
+Cost: $0.0007
+Time: 21.0s
+
+Detailed Results:
+----------------------------------------------------------------------
+
+
+  Status: success
+  Vet Count: None
+  Decision Maker: None

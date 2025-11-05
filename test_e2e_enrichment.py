@@ -44,13 +44,14 @@ def print_banner(title: str):
     print("=" * 70 + "\n")
 
 
-def confirm_execution(limit: int, estimated_cost: float, test_mode: bool) -> bool:
+def confirm_execution(limit: int, estimated_cost: float, test_mode: bool, auto_confirm: bool = False) -> bool:
     """Ask user to confirm execution.
 
     Args:
         limit: Number of practices to enrich
         estimated_cost: Estimated total cost
         test_mode: Whether test mode is enabled
+        auto_confirm: Skip confirmation prompt (for automation)
 
     Returns:
         True if user confirms, False otherwise
@@ -67,6 +68,10 @@ def confirm_execution(limit: int, estimated_cost: float, test_mode: bool) -> boo
     print(f"Test mode: {'ENABLED' if test_mode else 'DISABLED'}")
     print("\nThis will make REAL API calls and incur costs.")
     print("!" * 70)
+
+    if auto_confirm:
+        print("\n✅ Auto-confirm enabled - proceeding without prompt")
+        return True
 
     response = input("\nType 'yes' to proceed, anything else to cancel: ").strip().lower()
     return response == 'yes'
@@ -134,13 +139,14 @@ async def dry_run_preview(limit: int):
     }
 
 
-async def run_enrichment(limit: int, test_mode: bool, dry_run: bool = False):
+async def run_enrichment(limit: int, test_mode: bool, dry_run: bool = False, enable_scoring: bool = False, auto_confirm: bool = False):
     """Run enrichment pipeline.
 
     Args:
         limit: Maximum number of practices to enrich
         test_mode: Enable test mode (limits to 10)
         dry_run: Preview only, don't execute
+        enable_scoring: Auto-trigger scoring after enrichment (FEAT-003)
     """
     # Dry run preview
     if dry_run:
@@ -163,15 +169,55 @@ async def run_enrichment(limit: int, test_mode: bool, dry_run: bool = False):
         return
 
     # Confirm execution
-    if not confirm_execution(preview["count"], preview["estimated_cost"], test_mode):
+    if not confirm_execution(preview["count"], preview["estimated_cost"], test_mode, auto_confirm):
         print("\n❌ Execution cancelled by user.")
         return
 
     print("\n✅ Confirmed. Starting enrichment pipeline...\n")
 
+    # Initialize scoring callback if requested
+    scoring_callback = None
+    scoring_orchestrator = None
+    scoring_results = []
+
+    if enable_scoring:
+        print("🎯 Scoring enabled - will auto-score practices after enrichment\n")
+        from src.scoring.scoring_orchestrator import ScoringOrchestrator
+        from src.integrations.notion_scoring import NotionScoringClient
+        from src.scoring.lead_scorer import LeadScorer
+
+        # Initialize scoring components
+        notion_scoring_client = NotionScoringClient(
+            api_key=config.notion.api_key,
+            database_id=config.notion.database_id
+        )
+        lead_scorer = LeadScorer()
+        scoring_orchestrator = ScoringOrchestrator(
+            notion_client=notion_scoring_client,
+            scorer=lead_scorer
+        )
+
+        # Define callback that triggers scoring
+        # Note: This is a sync callback but we need to run async scoring
+        # We collect practice IDs during enrichment, then score them after
+        def scoring_callback(page_id: str, extraction):
+            """Callback to trigger scoring after enrichment."""
+            try:
+                # Since we're being called from within an async function,
+                # we can't create a new event loop. Instead, we'll collect
+                # the practice IDs and score them after enrichment completes.
+                scoring_results.append(page_id)
+                print(f"  📋 Queued for scoring: {page_id[:8]}...")
+            except Exception as e:
+                print(f"  ⚠️  Failed to queue for scoring: {e}")
+                raise
+
     # Initialize orchestrator
     from src.enrichment.enrichment_orchestrator import EnrichmentOrchestrator
-    orchestrator = EnrichmentOrchestrator(config=config)
+    orchestrator = EnrichmentOrchestrator(
+        config=config,
+        scoring_callback=scoring_callback
+    )
 
     # Run pipeline
     try:
@@ -182,6 +228,16 @@ async def run_enrichment(limit: int, test_mode: bool, dry_run: bool = False):
 
         # Print detailed results
         print_results(results)
+
+        # Run scoring if enabled and practices were queued
+        if enable_scoring and scoring_results:
+            print_banner(f"SCORING {len(scoring_results)} PRACTICES")
+            for page_id in scoring_results:
+                try:
+                    result = await scoring_orchestrator.score_practice_async(page_id)
+                    print(f"✅ Scored {page_id[:8]}...: {result.lead_score} pts ({result.priority_tier.value})")
+                except Exception as e:
+                    print(f"❌ Scoring failed for {page_id[:8]}...: {e}")
 
         # Save results to file
         save_results(results, limit)
@@ -318,11 +374,14 @@ Examples:
   # Test with 1 practice (minimal validation)
   python test_e2e_enrichment.py --limit 1
 
+  # Full E2E test: enrichment + scoring (1 practice)
+  python test_e2e_enrichment.py --limit 1 --enable-scoring
+
   # Test with 3 practices
   python test_e2e_enrichment.py --limit 3
 
-  # Test with 10 practices (test mode)
-  python test_e2e_enrichment.py --limit 10 --test-mode
+  # Test with 10 practices (test mode) + scoring
+  python test_e2e_enrichment.py --limit 10 --test-mode --enable-scoring
 
   # Full production run
   python test_e2e_enrichment.py
@@ -348,6 +407,18 @@ Examples:
         help="Preview practices without making API calls"
     )
 
+    parser.add_argument(
+        "--enable-scoring",
+        action="store_true",
+        help="Auto-trigger FEAT-003 scoring after enrichment (full E2E test)"
+    )
+
+    parser.add_argument(
+        "--yes",
+        action="store_true",
+        help="Skip confirmation prompt (for automation/testing)"
+    )
+
     args = parser.parse_args()
 
     # Run async
@@ -355,7 +426,9 @@ Examples:
         asyncio.run(run_enrichment(
             limit=args.limit,
             test_mode=args.test_mode,
-            dry_run=args.dry_run
+            dry_run=args.dry_run,
+            enable_scoring=args.enable_scoring,
+            auto_confirm=args.yes
         ))
     except KeyboardInterrupt:
         print("\n\n⚠️  Interrupted by user.")

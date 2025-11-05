@@ -158,6 +158,10 @@ class WebsiteScraper:
             elapsed = time.time() - start_time
             success_count = sum(1 for r in results if r.success)
 
+            # Track page types found for better diagnostics
+            page_types_found = set()
+            failed_pages = []
+
             logger.info(
                 f"Scraped {url}: {len(results)} pages attempted, {success_count} successful "
                 f"in {elapsed:.1f}s"
@@ -184,6 +188,7 @@ class WebsiteScraper:
                             content=result.cleaned_html
                         )
                         website_pages.append(page_data)
+                        page_types_found.add(page_type)
 
                         logger.debug(
                             f"  ✓ {page_type}: {result.url} ({len(result.cleaned_html):,} chars)"
@@ -192,15 +197,46 @@ class WebsiteScraper:
                     except ValueError as e:
                         # Empty content validation failed - skip this page
                         logger.warning(f"  ✗ {page_type}: {result.url} - empty content")
+                        failed_pages.append((page_type, result.url, "empty content"))
                         continue
 
                 elif not result.success:
                     # Log individual page failure but don't fail entire practice
+                    url_lower = result.url.lower()
+                    page_type = "unknown"
+                    if "about" in url_lower:
+                        page_type = "about"
+                    elif "team" in url_lower or "staff" in url_lower:
+                        page_type = "team"
+                    elif "contact" in url_lower:
+                        page_type = "contact"
+
                     logger.warning(
                         f"  ✗ Failed to scrape {result.url}: {result.error_message}"
                     )
+                    failed_pages.append((page_type, result.url, result.error_message or "unknown error"))
 
-            if not website_pages:
+            # Log summary of page coverage
+            expected_types = {"homepage", "about", "team", "contact"}
+            missing_types = expected_types - page_types_found
+
+            if website_pages:
+                logger.info(
+                    f"  Page coverage: {', '.join(sorted(page_types_found))} "
+                    f"({len(website_pages)} pages)"
+                )
+
+                if missing_types:
+                    logger.info(
+                        f"  Missing pages: {', '.join(sorted(missing_types))} "
+                        f"(may impact data completeness)"
+                    )
+
+                if failed_pages:
+                    logger.warning(f"  Failed {len(failed_pages)} page(s):")
+                    for page_type, page_url, error in failed_pages[:3]:  # Show first 3
+                        logger.warning(f"    - {page_type}: {error}")
+            else:
                 logger.warning(f"No pages successfully scraped for {url}")
 
             return website_pages

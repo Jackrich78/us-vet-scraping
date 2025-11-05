@@ -223,6 +223,8 @@ class EnrichmentOrchestrator:
 
         # Combine practice info with scraped pages
         results = []
+        total_pages_scraped = 0
+
         for practice in practices:
             pages = scrape_results.get(practice["website"], [])
             results.append({
@@ -232,12 +234,23 @@ class EnrichmentOrchestrator:
                 "pages": pages,
                 "scrape_success": len(pages) > 0
             })
+            total_pages_scraped += len(pages)
+
+            # Log per-practice summary
+            if pages:
+                logger.info(
+                    f"  ✓ {practice['name']}: {len(pages)} page(s) scraped"
+                )
+            else:
+                logger.warning(
+                    f"  ✗ {practice['name']}: 0 pages scraped (will skip extraction)"
+                )
 
         elapsed = time.time() - start_time
         successful = sum(1 for r in results if r["scrape_success"])
         logger.info(
-            f"Scraped {len(practices)} practices in {elapsed:.1f}s: "
-            f"{successful} successful, {len(practices) - successful} failed"
+            f"Scraping complete: {successful}/{len(practices)} practices succeeded, "
+            f"{total_pages_scraped} total pages in {elapsed:.1f}s"
         )
 
         return results

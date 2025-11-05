@@ -220,7 +220,7 @@ class NotionEnrichmentClient:
 
         # Vet count
         if extraction.vet_count_total is not None:
-            properties["Confirmed Vet Count (Total)"] = {"number": extraction.vet_count_total}
+            properties["Vet Count"] = {"number": extraction.vet_count_total}
 
         if extraction.vet_count_confidence:
             properties["Vet Count Confidence"] = {
