@@ -90,47 +90,106 @@ class LLMExtractor:
             f"temp={config.temperature}, budget=${cost_tracker.budget_limit:.2f}"
         )
 
-    def _prepare_website_text(self, pages: List[WebsiteData]) -> str:
-        """Prepare website content for extraction.
+    def _extract_page_type(self, url: str) -> str:
+        """Extract page type from URL for priority ordering.
 
-        Concatenates all page content with separators and truncates to MAX_TEXT_LENGTH
-        for cost control.
+        Args:
+            url: Page URL
+
+        Returns:
+            Page type identifier
+        """
+        url_lower = url.lower()
+
+        if "team" in url_lower or "staff" in url_lower or "doctor" in url_lower or "veterinarian" in url_lower:
+            return "team"
+        elif "about" in url_lower:
+            return "about"
+        elif "service" in url_lower:
+            return "services"
+        elif "contact" in url_lower or "location" in url_lower:
+            return "contact"
+        else:
+            return "homepage"
+
+    def _prepare_website_text(self, pages: List[WebsiteData]) -> str:
+        """Prepare website content for extraction with document-based budget allocation.
+
+        Uses page priority ordering to preserve high-value content (team/about pages)
+        and prevent homepage verbosity from truncating important decision-maker data.
+
+        Budget allocation:
+        - Team Page: 3000 chars (highest priority - contains vet names)
+        - About Page: 2500 chars (decision maker info, history)
+        - Homepage: 2000 chars (overview)
+        - Services Page: 1000 chars (specialties, technology)
+        - Other Pages: 500 chars (contact, hours)
 
         Args:
             pages: List of scraped website pages
 
         Returns:
-            Concatenated and truncated website text
+            Prioritized and budget-allocated website text
         """
         if not pages:
             return ""
 
-        # Concatenate all pages with clear separators
-        page_texts = []
-        for page in pages:
-            # Extract page type from URL for clarity
-            url_lower = page.url.lower()
-            if "about" in url_lower:
-                page_type = "ABOUT PAGE"
-            elif "team" in url_lower or "staff" in url_lower:
-                page_type = "TEAM PAGE"
-            elif "contact" in url_lower:
-                page_type = "CONTACT PAGE"
-            else:
-                page_type = "HOMEPAGE"
+        # Sort pages by importance (team > about > services > contact > homepage)
+        page_priority = {
+            "team": 1,
+            "about": 2,
+            "services": 3,
+            "contact": 4,
+            "homepage": 5
+        }
 
-            page_texts.append(f"=== {page_type} ===\n{page.content}\n")
+        sorted_pages = sorted(
+            pages,
+            key=lambda p: page_priority.get(self._extract_page_type(p.url), 99)
+        )
+
+        # Build text with page-specific character budgets
+        page_budgets = {
+            "team": 3000,
+            "about": 2500,
+            "services": 1000,
+            "contact": 500,
+            "homepage": 2000
+        }
+
+        page_texts = []
+        remaining_budget = self.MAX_TEXT_LENGTH
+
+        for page in sorted_pages:
+            page_type = self._extract_page_type(page.url)
+            page_budget = page_budgets.get(page_type, 500)
+
+            # Allocate budget proportionally if total exceeds limit
+            if remaining_budget <= 0:
+                logger.debug(
+                    f"Reached character budget limit. Stopped after {len(page_texts)} pages. "
+                    f"Prioritized: {', '.join(pt.split('===')[1].split('PAGE')[0].strip() for pt in page_texts)}"
+                )
+                break
+
+            # Use allocated budget for this page
+            actual_budget = min(page_budget, remaining_budget)
+            page_content = page.content[:actual_budget]
+
+            page_type_display = page_type.upper()
+            page_texts.append(
+                f"=== {page_type_display} PAGE ===\n{page_content}\n"
+            )
+            remaining_budget -= len(page_content)
 
         combined_text = "\n".join(page_texts)
 
-        # Truncate to MAX_TEXT_LENGTH if needed
         if len(combined_text) > self.MAX_TEXT_LENGTH:
-            truncated_text = combined_text[:self.MAX_TEXT_LENGTH]
+            # Final safety truncation (shouldn't happen with budget allocation)
+            combined_text = combined_text[:self.MAX_TEXT_LENGTH]
             logger.debug(
-                f"Truncated website text: {len(combined_text):,} -> "
-                f"{self.MAX_TEXT_LENGTH:,} chars"
+                f"Final truncation: {len(combined_text):,} chars (budget allocation applied)"
             )
-            return truncated_text
 
         return combined_text
 

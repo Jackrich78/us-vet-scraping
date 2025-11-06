@@ -22,7 +22,7 @@ Usage:
 import asyncio
 import time
 from typing import List, Optional
-from crawl4ai import AsyncWebCrawler, CrawlerRunConfig, CacheMode
+from crawl4ai import AsyncWebCrawler, CrawlerRunConfig, CacheMode, BrowserConfig
 from crawl4ai.deep_crawling import BFSDeepCrawlStrategy
 from crawl4ai.deep_crawling.filters import FilterChain, URLPatternFilter
 from crawl4ai.content_scraping_strategy import LXMLWebScrapingStrategy
@@ -50,9 +50,15 @@ class WebsiteScraper:
 
     # Default configuration (validated via spike testing)
     DEFAULT_MAX_DEPTH = 1  # Homepage + 1 level
-    DEFAULT_MAX_PAGES = 5  # Homepage + up to 4 sub-pages
-    DEFAULT_PAGE_TIMEOUT = 30000  # 30 seconds per page
-    DEFAULT_URL_PATTERNS = ["*about*", "*team*", "*staff*", "*contact*"]
+    DEFAULT_MAX_PAGES = 7  # Homepage + up to 6 sub-pages (increased for expanded patterns)
+    DEFAULT_PAGE_TIMEOUT = 60000  # 60 seconds per page (increased for reliable rendering)
+    DEFAULT_URL_PATTERNS = [
+        "*about*", "*about-us*", "*our-practice*",
+        "*team*", "*staff*", "*our-team*", "*meet*team*",
+        "*doctor*", "*doctors*", "*veterinarian*", "*veterinarians*", "*our-veterinarian*",
+        "*contact*", "*hours*", "*location*",
+        "*service*", "*services*"
+    ]
 
     def __init__(
         self,
@@ -95,7 +101,17 @@ class WebsiteScraper:
         await self._teardown()
 
     async def _setup(self):
-        """Initialize crawler and configuration."""
+        """Initialize crawler and configuration with anti-bot stealth mode."""
+        # Configure browser with stealth mode to handle reCAPTCHA and bot detection
+        # Based on Crawl4AI docs: user_agent_mode, simulate_user, override_navigator
+        browser_config = BrowserConfig(
+            browser_type="chromium",
+            headless=True,
+            user_agent_mode="random",  # Rotate user agents
+            viewport_width=1920,
+            viewport_height=1080
+        )
+
         # Configure URL pattern filter
         url_filter = URLPatternFilter(patterns=self.url_patterns)
 
@@ -107,20 +123,32 @@ class WebsiteScraper:
             filter_chain=FilterChain([url_filter])
         )
 
-        # Configure crawler
+        # Configure crawler with anti-bot and content extraction settings
+        # Validated from Crawl4AI docs (Archon source: 21ece81541cd5527)
         self._config = CrawlerRunConfig(
             deep_crawl_strategy=strategy,
             scraping_strategy=LXMLWebScrapingStrategy(),
             cache_mode=CacheMode.ENABLED if self.cache_enabled else CacheMode.BYPASS,
             page_timeout=self.page_timeout,
-            verbose=False  # Reduce noise in logs
+            wait_until="domcontentloaded",  # Wait for DOM ready (networkidle too strict for vet sites with trackers)
+            wait_for_images=False,         # Don't wait for images (too slow, content available without them)
+            delay_before_return_html=2.0,  # Wait 2s for JS to execute before extracting
+            user_agent_mode="random",  # Rotate user agents
+            simulate_user=True,        # Simulate human mouse movements
+            override_navigator=True,   # Override navigator.webdriver property
+            magic=True,                # Auto-handle common bot detection patterns
+            verbose=False              # Reduce noise in logs
         )
 
-        # Initialize crawler
-        self._crawler = AsyncWebCrawler()
+        # Initialize crawler with browser config
+        self._crawler = AsyncWebCrawler(config=browser_config)
         await self._crawler.__aenter__()
 
-        logger.debug("AsyncWebCrawler initialized and ready")
+        logger.debug(
+            "AsyncWebCrawler initialized with stealth mode: "
+            f"timeout={self.page_timeout}ms, max_pages={self.max_pages}, "
+            f"anti-bot=enabled"
+        )
 
     async def _teardown(self):
         """Cleanup crawler resources."""

@@ -1,0 +1,26 @@
+FEAT-002 Enrichment Test Results
+Timestamp: 20251106_123132
+Limit: 3 practices
+======================================================================
+
+Total: 3
+Successful: 1
+Failed: 2
+Cost: $0.0007
+Time: 40.8s
+
+Detailed Results:
+----------------------------------------------------------------------
+
+
+  Status: scrape_failed
+  Error: Website scraping failed (0 pages scraped)
+
+
+  Status: scrape_failed
+  Error: Website scraping failed (0 pages scraped)
+
+
+  Status: success
+  Vet Count: None
+  Decision Maker: None

@@ -3,11 +3,8 @@ You are analyzing a veterinary practice website to extract structured data for B
 From the provided website content, extract the following information in JSON format:
 
 {
-  "vet_count": {
-    "total": <number or null>,
-    "confidence": "high|medium|low",
-    "source": "explicit count mentioned|counted from team page|estimated from context"
-  },
+  "vet_count_total": <number or null>,
+  "vet_count_confidence": "high|medium|low",
 
   "veterinarians": [
     {
@@ -81,16 +78,17 @@ From the provided website content, extract the following information in JSON for
 
 CRITICAL INSTRUCTIONS:
 1. The "personalization_context" field is ESSENTIAL (flat array, not nested) - find at least 2-3 unique, specific facts about this practice that could be conversation starters for a cold call.
-2. For vet_count, count individual veterinarians listed on team/staff pages. Be conservative - only report if confident. Better to return null than guess incorrectly.
-3. For decision_maker, look for titles like "Owner", "Practice Owner", "Practice Manager", "Hospital Administrator", "Managing Director".
-4. Extract ACTUAL names when possible, not generic titles.
-5. Return null for any field where information is not found - do not guess or hallucinate.
-6. For services and technology, only mark as true if explicitly mentioned or clearly visible on the website.
-7. Personalization context should be SPECIFIC and UNIQUE to this practice, not generic facts that apply to all vets.
-8. "awards_accreditations" should list AAHA accreditation, Fear Free Certification, and awards.
-9. "recent_news_updates" should capture news from the last 12 months (new locations, expansions, major investments).
-10. "community_involvement" should note charity partnerships, rescue support, school programs, local event sponsorships.
-11. "practice_philosophy" should extract mission statements or "our approach" sections (max 500 chars).
+2. For vet_count_total, count individual veterinarians (DVMs) listed on team/staff pages. Be conservative - only report if confident. Better to return null than guess incorrectly.
+3. For vet_count_confidence, use: "high" (explicit list with names), "medium" (count mentioned in text), "low" (inferred from context).
+4. For decision_maker, look for titles like "Owner", "Practice Owner", "Practice Manager", "Hospital Administrator", "Managing Director".
+5. Extract ACTUAL names when possible, not generic titles.
+6. Return null for any field where information is not found - do not guess or hallucinate.
+7. For services and technology, only mark as true if explicitly mentioned or clearly visible on the website.
+8. Personalization context should be SPECIFIC and UNIQUE to this practice, not generic facts that apply to all vets.
+9. "awards_accreditations" should list AAHA accreditation, Fear Free Certification, and awards.
+10. "recent_news_updates" should capture news from the last 12 months (new locations, expansions, major investments).
+11. "community_involvement" should note charity partnerships, rescue support, school programs, local event sponsorships.
+12. "practice_philosophy" should extract mission statements or "our approach" sections (max 500 chars).
 
 Examples of GOOD personalization context:
 - "Opened in 1952, family-owned for 3 generations"

@@ -70,7 +70,7 @@ class WebsiteScrapingConfig(BaseSettings):
     """Website scraping configuration."""
 
     max_concurrent: int = Field(default=5)
-    timeout_seconds: int = Field(default=30)
+    timeout_seconds: int = Field(default=60)  # Increased from 30 for reliable page rendering (FEAT-004)
     retry_attempts: int = Field(default=2)
     extraction_prompt_file: str = Field(default='config/website_extraction_prompt.txt')
     cache_enabled: bool = Field(default=True)
