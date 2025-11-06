@@ -1,0 +1,100 @@
+{
+  "metadata": {
+    "created": "2025-11-06",
+    "purpose": "Baseline vet count extraction accuracy testing",
+    "methodology": "Manual verification of staff pages + automated extraction comparison",
+    "notes": "Each case manually verified by visiting the staff/team page directly"
+  },
+  "test_cases": [
+    {
+      "id": "test_001",
+      "practice_name": "Raynham Veterinary Hospital",
+      "website_url": "https://raynhamvet.com",
+      "staff_page_url": "https://raynhamvet.com/staff/",
+      "expected_vet_count": 3,
+      "expected_confidence": "high",
+      "veterinarians": [
+        {
+          "name": "Dr. Karen Reamsnyder",
+          "title": "Owner/Veterinarian",
+          "notes": "40 years experience"
+        },
+        {
+          "name": "Dr. Laurie Buche",
+          "title": "Veterinarian",
+          "notes": "33 years experience"
+        },
+        {
+          "name": "Dr. James Tiede",
+          "title": "Veterinarian",
+          "notes": ""
+        }
+      ],
+      "notes": "Clear case: all vets explicitly named with veterinarian titles, separate staff page",
+      "status": "ready_to_test"
+    },
+    {
+      "id": "test_002",
+      "practice_name": "[PENDING - Boston area vet clinic with 1 vet]",
+      "website_url": "https://[TBD]",
+      "staff_page_url": "https://[TBD]",
+      "expected_vet_count": 1,
+      "expected_confidence": "high",
+      "veterinarians": [
+        {
+          "name": "[To be filled]",
+          "title": "[To be filled]",
+          "notes": "[To be filled]"
+        }
+      ],
+      "notes": "Small practice with single owner-vet",
+      "status": "pending_research"
+    },
+    {
+      "id": "test_003",
+      "practice_name": "[PENDING - Multi-location clinic]",
+      "website_url": "https://[TBD]",
+      "staff_page_url": "https://[TBD]",
+      "expected_vet_count": null,
+      "expected_confidence": "not_found",
+      "veterinarians": [],
+      "notes": "Practice with no explicit staff page or vet names visible",
+      "status": "pending_research"
+    }
+  ],
+  "notes_for_researchers": {
+    "selection_criteria": [
+      "Mix of practice sizes (1, 2-3, 4+)",
+      "Mix of website complexity (simple, modern)",
+      "Mix of staff page types (dedicated /team, /staff, /doctors, embedded in /about)",
+      "Include edge cases: only owner listed, vet techs on page, missing pages"
+    ],
+    "manual_verification_checklist": [
+      "Visit staff/team page directly",
+      "Count people with DVM, Doctor, Veterinarian in title",
+      "Ignore: techs, assistants, receptionists, managers without vet title",
+      "Note if Dr. prefix without explicit vet title (count only with context)",
+      "Record exact names and titles found",
+      "Note if page doesn't exist or is hidden"
+    ],
+    "where_to_find_vets": [
+      "Practice website: /team, /staff, /doctors, /our-team, /meet-team",
+      "About page: may list vets inline",
+      "Contact page: sometimes lists vet names",
+      "Google Maps listing: may have team photos/names",
+      "Facebook: sometimes has staff list"
+    ]
+  },
+  "research_log": {
+    "started": "2025-11-06",
+    "status": "In Progress - Need to add 17-19 more test cases",
+    "next_steps": [
+      "Search Boston area vet clinics for diverse examples",
+      "Manually visit each staff page",
+      "Record actual vet count and names",
+      "Save screenshots if possible",
+      "Run extraction pipeline on each",
+      "Compare actual vs extracted"
+    ]
+  }
+}
